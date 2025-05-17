@@ -119,6 +119,15 @@ public:
             throw std::out_of_range("Row or column index out of range");
         return grid[row][col];
     }
+    void setCell(int row, int col, Cell val)
+    {
+        // optionele bound-checks:
+        if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
+        {
+            throw std::out_of_range("Connect4Board::setCell: index out of range");
+        }
+        grid[row][col] = val;
+    }
 };
 
 #endif // CONNECT4_BOARD_H

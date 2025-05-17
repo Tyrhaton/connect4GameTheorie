@@ -43,23 +43,31 @@ Column charToColumn(char c)
 
 int main()
 {
+    // Initialisation
     cout << "Starting game theorie" << endl;
 
     Connect4Board b;
     GameTheorie g;
 
-    b.dropDisc(Column::B, Connect4Board::PLAYER1);
-    b.dropDisc(Column::C, Connect4Board::PLAYER2);
-    b.dropDisc(Column::D, Connect4Board::PLAYER1);
-    b.dropDisc(Column::B, Connect4Board::PLAYER2);
-    b.dropDisc(Column::D, Connect4Board::PLAYER1);
-    b.dropDisc(Column::G, Connect4Board::PLAYER2);
+    // Config
+    bool debug = true;
+    GameTheorie::Level level = GameTheorie::Level::EASY;
+    // Connect4Board::Cell startingPlayer = Connect4Board::PLAYER1;
+
+    // Preset
+    // b.dropDisc(Column::B, Connect4Board::PLAYER1);
+    // b.dropDisc(Column::C, Connect4Board::PLAYER2);
+    // b.dropDisc(Column::D, Connect4Board::PLAYER1);
+    // b.dropDisc(Column::B, Connect4Board::PLAYER2);
+    // b.dropDisc(Column::D, Connect4Board::PLAYER1);
+    // b.dropDisc(Column::G, Connect4Board::PLAYER2);
 
     bool run = true;
 
     string move;
     while (run)
     {
+
         cout << "Enter your move (A-G) or 'exit' to quit: " << endl;
         getline(cin, move);
         if (move == "exit" || move == "Exit" || move == "quit" || move == "q")
@@ -67,13 +75,29 @@ int main()
             run = false;
             break;
         }
+        // player 1
 
         Column col = charToColumn(move[0]);
         b.dropDisc(col, Connect4Board::PLAYER1);
         b.print();
-        Column bestMove = g.getBestMove(b);
+        bool player1Won = g.checkWin(b, Connect4Board::PLAYER1);
+        if(player1Won)
+        {
+            cout << "Player 1 won!" << endl;
+            break;
+        }
+
+        // player 2
+
+        Column bestMove = g.getBestMove(b, Connect4Board::PLAYER2, level, debug);
         b.dropDisc(bestMove, Connect4Board::PLAYER2);
         b.print();
+        bool player2Won = g.checkWin(b, Connect4Board::PLAYER2);
+        if(player2Won)
+        {
+            cout << "Player 2 won!" << endl;
+            break;
+        }
     }
     cout << "Game over!" << endl;
 

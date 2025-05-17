@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <vector>
 #include <set>
-#include "Connect4Board.h"
+// #include "Connect4Board.h"
 
 using namespace std;
 
@@ -50,7 +50,14 @@ public:
     static constexpr int ROWS = Connect4Board::ROWS;
     static constexpr int COLS = Connect4Board::COLS;
 
-    std::array<std::array<TileContent, COLS>, ROWS> grid;
+    array<array<TileContent, COLS>, ROWS> grid;
+
+    enum Level
+    {
+        EASY = 0,
+        MEDIUM = 1,
+        HARD = 2
+    };
 
     GameTheorie()
     {
@@ -60,52 +67,105 @@ public:
         }
     }
 
-    Column getBestMove(Connect4Board board)
+    Column getBestMove(Connect4Board board, Connect4Board::Cell player,  GameTheorie::Level level, bool debug)
     {
-        std::vector<Column> possibleMoves = getPossibleMoves(board);
+        vector<Column> possibleMoves = getPossibleMoves(board);
         if (possibleMoves.empty())
         {
-            throw std::runtime_error("No possible moves available.");
+            throw runtime_error("No possible moves available.");
         }
+        vector<int> pressure = computePressureSum(board, player); // computePressure(Connect4Board::PLAYER2, board);
+        vector<int> winOptions = countWinOptionsPerColumn(board, player);
+        vector<bool> threats = isImmediateThreat(board, Connect4Board::PLAYER1);
 
-        std::vector<int> pressure = computePressureSum(board, Connect4Board::PLAYER2); // computePressure(Connect4Board::PLAYER2, board);
-
-        std::cout << "\nSpanning per kolom voor speler 2:\n";
-        for (int c = 0; c < Connect4Board::COLS; ++c)
+        // TODO: implement best-move logic here
+        if (debug)
         {
-            char col = 'A' + c;
-            if (pressure[c] < 0)
-                std::cout << col << ": kolom vol\n";
-            else
-                std::cout << col << ": " << pressure[c] << "\n";
+            cout << "Possible moves: " << endl;
+
+            for (const auto &move : possibleMoves)
+            {
+                cout << static_cast<char>('A' + move) << " ";
+            }
+            cout << endl
+                 << endl;
+
+            cout << "\nSpanning per kolom voor speler 2:" << endl;
+
+            for (int c = 0; c < Connect4Board::COLS; ++c)
+            {
+                if (pressure[c] < 0)
+                    cout << "X ";
+                else
+                    cout << pressure[c] << " ";
+            }
+
+            cout << endl
+                 << endl;
+
+            cout << "Aantal win-opties per kolom voor speler 2:" << endl;
+
+            for (int c = 0; c < 7; ++c)
+            {
+                if (winOptions[c] < 0)
+                    cout << "X ";
+                else
+                    cout << winOptions[c] << " ";
+            }
+            cout << endl;
+            cout << endl;
+            cout << "Threat:" << endl;
+
+            for (int c = 0; c < 7; ++c)
+            {
+                if (threats[c] == true)
+                    cout << "T ";
+                else
+                    cout << "X ";
+            }
+            cout << endl;
+            cout << endl;
         }
+
+        // level 0
 
         int bestPressure = -1;
+        int bestWinOptions = -1;
         Column bestMove = possibleMoves.front();
         for (Column col : possibleMoves)
         {
-            int p = pressure[col];
-            if (p > bestPressure)
+            if (threats[col])
             {
-                bestPressure = p;
+                // opponent has a threat
+                return col;
+            }
+            int p = winOptions[col];
+            if (p > bestWinOptions)
+            {
+                bestWinOptions = p;
+                bestPressure = pressure[col];
                 bestMove = col;
+            }
+            else if (p == bestWinOptions)
+            {
+                // check pressure
+                if (pressure[col] > bestPressure)
+                {
+                    bestPressure = pressure[col];
+                    bestMove = col;
+                }
             }
         }
 
-        // TODO: implement best-move logic here
-        std::cout << "Possible moves: ";
-        for (const auto &move : possibleMoves)
-        {
-            std::cout << move << " ";
-        }
-        std::cout << std::endl;
+        // level 1
+
         return bestMove; // Placeholder: return the first possible move
     }
 
-    std::vector<Column> getPossibleMoves(Connect4Board board)
+    vector<Column> getPossibleMoves(Connect4Board board)
     {
         // Check for possible moves in the current board state
-        std::vector<Column> validMoves;
+        vector<Column> validMoves;
 
         for (int col = 0; col < COLS; ++col)
         {
@@ -120,101 +180,6 @@ public:
         }
 
         return validMoves;
-    }
-    /*
-    loop through all possible tiles(lowest tile for each column that is empty(0))
-    for each tile check its 4 neighbours left, right, up, down, upright, upleft, downright, downleft.
-    using that calculate how many win options for player there are that include the selected tile.
-    then return for each tile how many tiles are within this reach from the player, that help create win positions, but if there is en opponent tile between the selected tile and the other tile, the other tile wont count.
-    */
-
-    const int dr[4] = {0, 1, 1, 1};
-    const int dc[4] = {1, 0, 1, -1};
-
-    vector<int> computeWinOptionsPerColumn(const Connect4Board &board,
-                                           Connect4Board::Cell player)
-    {
-        // bepaal wie de opponent is
-        auto opponent = (player == Connect4Board::PLAYER1
-                             ? Connect4Board::PLAYER2
-                             : Connect4Board::PLAYER1);
-
-        vector<int> options(Connect4Board::COLS, 0);
-
-        // 4 basisrichtingen: rechts, omhoog, diag-up-right, diag-up-left
-        static constexpr int dr[4] = {0, 1, 1, 1};
-        static constexpr int dc[4] = {1, 0, 1, -1};
-
-        for (int c = 0; c < Connect4Board::COLS; ++c)
-        {
-            // 1) vind de speelbare tegel (laagste lege rij) in kolom c
-            int r_play = -1;
-            for (int r = Connect4Board::ROWS - 1; r >= 0; --r)
-            {
-                if (board.getCell(r, c) == Connect4Board::EMPTY)
-                {
-                    r_play = r;
-                    break;
-                }
-            }
-            if (r_play < 0)
-            {
-                // kolom vol: geen opties
-                options[c] = 0;
-                continue;
-            }
-
-            int count = 0;
-            // 2) scan alle 4-op-een-rij-vensters in 4 richtingen
-            for (int dir = 0; dir < 4; ++dir)
-            {
-                // we laten het raam “sliden” over G door offset 0..3
-                for (int off = 0; off < 4; ++off)
-                {
-                    int sr = r_play - dr[dir] * off;
-                    int sc = c - dc[dir] * off;
-
-                    // 2.a) check of heel window binnen bord en vrij van opponent
-                    bool ok = true;
-                    for (int i = 0; i < 4; ++i)
-                    {
-                        int rr = sr + dr[dir] * i;
-                        int cc = sc + dc[dir] * i;
-                        if (rr < 0 || rr >= Connect4Board::ROWS ||
-                            cc < 0 || cc >= Connect4Board::COLS ||
-                            board.getCell(rr, cc) == opponent)
-                        {
-                            ok = false;
-                            break;
-                        }
-                    }
-                    if (!ok)
-                        continue;
-
-                    // 2.b) check dat G echt in dat window zit (offset garandeert dat,
-                    // maar we check defensief):
-                    bool coversG = false;
-                    for (int i = 0; i < 4; ++i)
-                    {
-                        if (sr + dr[dir] * i == r_play &&
-                            sc + dc[dir] * i == c)
-                        {
-                            coversG = true;
-                            break;
-                        }
-                    }
-                    if (!coversG)
-                        continue;
-
-                    //   *** als we hier zijn: het is een geldige win-optie ***
-                    count++;
-                }
-            }
-
-            options[c] = count;
-        }
-
-        return options;
     }
 
     vector<int> computePressureSum(const Connect4Board &board,
@@ -307,6 +272,185 @@ public:
             pressure[c] = sumTiles;
         }
         return pressure;
+    }
+
+    /**
+     * return per kolom (A…G) het aantal win‐opties voor de speelbare tegel in die kolom.
+     * Als kolom vol is, krijg je -1.
+     */
+    vector<int> countWinOptionsPerColumn(
+        const Connect4Board &board,
+        Connect4Board::Cell player)
+    {
+        // bepaal de tegenstander
+        auto opponent = (player == Connect4Board::PLAYER1
+                             ? Connect4Board::PLAYER2
+                             : Connect4Board::PLAYER1);
+
+        // output per kolom
+        vector<int> result(Connect4Board::COLS, -1);
+
+        // hulp‐lambda om binnen bord te checken
+        auto inBoard = [&](int r, int c)
+        {
+            return r >= 0 && r < Connect4Board::ROWS && c >= 0 && c < Connect4Board::COLS;
+        };
+
+        // de vier richtingen (dr, dc)
+        static constexpr int dr[4] = {0, 1, 1, -1};
+        static constexpr int dc[4] = {1, 0, 1, 1};
+
+        for (int c = 0; c < Connect4Board::COLS; ++c)
+        {
+            // 1) vind de speelbare tegel in kolom c (eerste lege van onder)
+            int r_play = -1;
+            for (int r = Connect4Board::ROWS - 1; r >= 0; --r)
+            {
+                if (board.getCell(r, c) == Connect4Board::EMPTY)
+                {
+                    r_play = r;
+                    break;
+                }
+            }
+            if (r_play < 0)
+            {
+                // kolom is vol
+                result[c] = -1;
+                continue;
+            }
+
+            int count = 0;
+            // 2) scan alle 4‐lange vensters in 4 richtingen
+            for (int dir = 0; dir < 4; ++dir)
+            {
+                for (int off = 0; off < 4; ++off)
+                {
+                    // schuif het raam zo dat (r_play,c) op positie 'off' ligt
+                    int sr = r_play - dr[dir] * off;
+                    int sc = c - dc[dir] * off;
+
+                    // a) check of raam binnen bord en geen tegenstander
+                    bool valid = true;
+                    for (int k = 0; k < 4; ++k)
+                    {
+                        int rr = sr + dr[dir] * k;
+                        int cc = sc + dc[dir] * k;
+                        if (!inBoard(rr, cc) || board.getCell(rr, cc) == opponent)
+                        {
+                            valid = false;
+                            break;
+                        }
+                    }
+                    if (!valid)
+                        continue;
+
+                    // b) check dat (r_play,c) er echt in zit
+                    bool covers = false;
+                    for (int k = 0; k < 4; ++k)
+                    {
+                        if (sr + dr[dir] * k == r_play && sc + dc[dir] * k == c)
+                        {
+                            covers = true;
+                            break;
+                        }
+                    }
+                    if (!covers)
+                        continue;
+
+                    // c) dit raam telt als één win‐optie
+                    ++count;
+                }
+            }
+
+            result[c] = count;
+        }
+
+        return result;
+    }
+    bool checkWin(Connect4Board board, Connect4Board::Cell player) const
+    {
+        // vier richtingen: horizontaal, verticaal, diag-up, diag-down
+        static constexpr int dr[4] = {0, 1, 1, 1};
+        static constexpr int dc[4] = {1, 0, 1, -1};
+
+        auto inBoard = [&](int r, int c)
+        {
+            return r >= 0 && r < ROWS && c >= 0 && c < COLS;
+        };
+
+        // voor elke cel als start
+        for (int r = 0; r < ROWS; ++r)
+        {
+            for (int c = 0; c < COLS; ++c)
+            {
+                if (board.getCell(r, c) != player)
+                    continue;
+                // in elke richting 4 op een rij checken
+                for (int dir = 0; dir < 4; ++dir)
+                {
+                    int cnt = 1;
+                    int rr = r + dr[dir], cc = c + dc[dir];
+                    // tel zo lang er dezelfde speler op staat
+                    while (inBoard(rr, cc) && board.getCell(rr, cc) == player)
+                    {
+                        ++cnt;
+                        if (cnt == 4)
+                            return true;
+                        rr += dr[dir];
+                        cc += dc[dir];
+                    }
+                }
+            }
+        }
+        return false;
+    } /**
+       * isImmediateThreat(board, opponent)
+       *   Retourneert een vector van size COLS met per kolom:
+       *     • true  als de tegenstander, wanneer hij in die kolom speelt, direct
+       *            4-op-een-rij heeft
+       *     • false anders (of kolom vol)
+       */
+    vector<bool> isImmediateThreat(
+        const Connect4Board &board,
+        Connect4Board::Cell opponent)
+    {
+        int R = Connect4Board::ROWS;
+        int C = Connect4Board::COLS;
+        vector<bool> threat(C, false);
+
+        // helper om speelbare rij in kolom c te vinden
+        auto findRow = [&](int c)
+        {
+            for (int r = R - 1; r >= 0; --r)
+            {
+                if (board.getCell(r, c) == Connect4Board::EMPTY)
+                    return r;
+            }
+            return -1;
+        };
+
+        // voor elke kolom c
+        for (int c = 0; c < C; ++c)
+        {
+            int r = findRow(c);
+            if (r < 0)
+            {
+                // kolom vol: geen threat
+                threat[c] = false;
+                continue;
+            }
+            // simuleer tegenstander speelt hier:
+            Connect4Board copy = board;
+            copy.setCell(r, c, opponent);
+            // check of hij gewonnen heeft
+            if (checkWin(copy, opponent))
+            {
+                threat[c] = true;
+            }
+            // anders blijft false
+        }
+
+        return threat;
     }
 };
 #endif // GAMETHEORIE_H
