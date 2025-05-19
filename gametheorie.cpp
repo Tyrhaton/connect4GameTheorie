@@ -1,8 +1,4 @@
-#include <iostream>
-#include "Connect4Board.h"
-#include "GameTheorie.h"
-#include <string>
-using namespace std;
+#include "include.h"
 
 Column charToColumn(char c)
 {
@@ -46,8 +42,10 @@ int main()
     // Initialisation
     cout << "Starting game theorie" << endl;
 
-    Connect4Board b;
-    GameTheorie g;
+    Connect4Board board;
+    Connect4Board::Player player = Connect4Board::Player::PLAYER1;
+    Connect4Board::Player opponent = board.getOponent(player);
+    GameTheorie brain = GameTheorie(player, opponent);
 
     // Config
     bool debug = true;
@@ -78,10 +76,9 @@ int main()
         // player 1
 
         Column col = charToColumn(move[0]);
-        b.dropDisc(col, Connect4Board::PLAYER1);
-        b.print();
-        bool player1Won = g.checkWin(b, Connect4Board::PLAYER1);
-        if(player1Won)
+        bool player1Won = board.dropDisc(col, player);
+        board.print();
+        if (player1Won)
         {
             cout << "Player 1 won!" << endl;
             break;
@@ -89,11 +86,10 @@ int main()
 
         // player 2
 
-        Column bestMove = g.getBestMove(b, Connect4Board::PLAYER2, level, debug);
-        b.dropDisc(bestMove, Connect4Board::PLAYER2);
-        b.print();
-        bool player2Won = g.checkWin(b, Connect4Board::PLAYER2);
-        if(player2Won)
+        Column bestMove = brain.getBestMove(board, opponent, level, debug);
+        bool player2Won = board.dropDisc(bestMove, opponent);
+        board.print();
+        if (player2Won)
         {
             cout << "Player 2 won!" << endl;
             break;

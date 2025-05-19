@@ -1,19 +1,12 @@
 #ifndef GAMETHEORIE_H
 #define GAMETHEORIE_H
 
-#include <array>
-#include <iostream>
-#include <stdexcept>
-#include <vector>
-#include <set>
-// #include "Connect4Board.h"
-
-using namespace std;
+#include "include.h"
 
 class TileContent
 {
 public:
-    Connect4Board::Cell OWNER;
+    Connect4Board::Player OWNER;
     int PRESSURE;
     bool THREAD;
     bool WINCHANCE;
@@ -22,7 +15,7 @@ public:
     bool AUTOMATIC_WIN;
 
     TileContent()
-        : OWNER(Connect4Board::EMPTY),
+        : OWNER(Connect4Board::Player::EMPTY),
           PRESSURE(0),
           THREAD(false),
           WINCHANCE(false),
@@ -49,6 +42,9 @@ class GameTheorie
 public:
     static constexpr int ROWS = Connect4Board::ROWS;
     static constexpr int COLS = Connect4Board::COLS;
+    
+    Connect4Board::Player PLAYER = Connect4Board::Player::EMPTY;
+    Connect4Board::Player OPPONENT = Connect4Board::Player::EMPTY;
 
     array<array<TileContent, COLS>, ROWS> grid;
 
@@ -59,15 +55,17 @@ public:
         HARD = 2
     };
 
-    GameTheorie()
+    GameTheorie(Connect4Board::Player player, Connect4Board::Player opponent)
     {
         for (auto &row : grid)
         {
             row.fill(TileContent());
         }
+        PLAYER = player;
+        OPPONENT = opponent;
     }
 
-    Column getBestMove(Connect4Board board, Connect4Board::Cell player, GameTheorie::Level level, bool debug)
+    Column getBestMove(Connect4Board board, Connect4Board::Player player, GameTheorie::Level level, bool debug)
     {
         (void)level; // Unused parameter
         vector<Column> possibleMoves = getPossibleMoves(board);
@@ -77,16 +75,16 @@ public:
         }
         vector<int> pressure = computePressureSum(board, player);
         vector<int> winOptions = countWinOptionsPerColumn(board, player);
-        vector<bool> threats = isImmediateThreat(board, Connect4Board::PLAYER1);
-        vector<bool> minorThreats = computeMinorThreatsBool(board, Connect4Board::PLAYER2);
-        vector<bool> winMoves = computeWinningMoves(board, Connect4Board::PLAYER2);
+        vector<bool> threats = isImmediateThreat(board, player);
+        vector<bool> minorThreats = computeMinorThreatsBool(board, player);
+        vector<bool> winMoves = computeWinningMoves(board, player);
 
         // TODO: implement best-move logic here
         if (debug)
         {
             cout << "Possible moves: " << endl;
 
-            for (const auto &move : possibleMoves)
+            for (const Column &move : possibleMoves)
             {
                 cout << static_cast<char>('A' + move) << " ";
             }
@@ -207,7 +205,7 @@ public:
         {
             for (int row = ROWS - 1; row >= 0; --row)
             {
-                if (board.getCell(row, col) == Connect4Board::EMPTY)
+                if (board.getCell(row, col) == Connect4Board::Player::EMPTY)
                 {
                     validMoves.push_back(static_cast<Column>(col));
                     break;
@@ -219,12 +217,10 @@ public:
     }
 
     vector<int> computePressureSum(const Connect4Board &board,
-                                   Connect4Board::Cell player)
+                                   Connect4Board::Player player)
     {
         // bepaal opponent
-        auto opponent = (player == Connect4Board::PLAYER1
-                             ? Connect4Board::PLAYER2
-                             : Connect4Board::PLAYER1);
+        Connect4Board::Player opponent = board.getOponent(player);
 
         vector<int> pressure(Connect4Board::COLS, -1);
 
@@ -316,12 +312,10 @@ public:
      */
     vector<int> countWinOptionsPerColumn(
         const Connect4Board &board,
-        Connect4Board::Cell player)
+        Connect4Board::Player player)
     {
         // bepaal de tegenstander
-        auto opponent = (player == Connect4Board::PLAYER1
-                             ? Connect4Board::PLAYER2
-                             : Connect4Board::PLAYER1);
+        Connect4Board::Player opponent = board.getOponent(player);
 
         // output per kolom
         vector<int> result(Connect4Board::COLS, -1);
@@ -403,7 +397,7 @@ public:
 
         return result;
     }
-    bool checkWin(Connect4Board board, Connect4Board::Cell player) const
+    bool checkWin(Connect4Board board, Connect4Board::Player player) const
     {
         // vier richtingen: horizontaal, verticaal, diag-up, diag-down
         static constexpr int dr[4] = {0, 1, 1, 1};
@@ -450,10 +444,11 @@ public:
      */
     vector<bool> isImmediateThreat(
         const Connect4Board &board,
-        Connect4Board::Cell opponent)
+        Connect4Board::Player player)
     {
-        int R = Connect4Board::ROWS;
-        int C = Connect4Board::COLS;
+        Connect4Board::Player opponent = board.getOponent(player);
+        int R = board.ROWS;
+        int C = board.COLS;
         vector<bool> threat(C, false);
 
         // helper om speelbare rij in kolom c te vinden
@@ -493,13 +488,12 @@ public:
 
     vector<bool> computeMinorThreatsBool(
         const Connect4Board &board,
-        Connect4Board::Cell me)
+        Connect4Board::Player me)
     {
         // bepaal opponent
-        Connect4Board::Cell op = (me == Connect4Board::PLAYER1
-                                      ? Connect4Board::PLAYER2
-                                      : Connect4Board::PLAYER1);
-        int R = Connect4Board::ROWS, C = Connect4Board::COLS;
+        Connect4Board::Player opponent = board.getOponent(me);
+        int R = board.ROWS;
+        int C = board.COLS;
 
         // 8-buren
         static constexpr int dr8[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
@@ -554,17 +548,17 @@ public:
                             countMe = 1;
                             break; // ongeldig
                         }
-                        auto cell = board.getCell(rr, cc);
+                        Connect4Board::Player cell = board.getCell(rr, cc);
                         if (rr == r_play && cc == c)
                         {
                             covers = true;
                             countEmp++;
                         }
-                        else if (cell == Connect4Board::EMPTY)
+                        else if (cell == Connect4Board::Player::EMPTY)
                         {
                             countEmp++;
                         }
-                        else if (cell == op)
+                        else if (cell == opponent)
                         {
                             countOp++;
                         }
@@ -590,7 +584,7 @@ public:
             {
                 int rr = r_play + dr8[k],
                     cc = c + dc8[k];
-                if (inB(rr, cc) && board.getCell(rr, cc) == op)
+                if (inB(rr, cc) && board.getCell(rr, cc) == opponent)
                 {
                     adj = true;
                 }
@@ -611,7 +605,7 @@ public:
      */
     vector<bool> computeWinningMoves(
         Connect4Board board,
-        Connect4Board::Cell player)
+        Connect4Board::Player player)
     {
         const int R = Connect4Board::ROWS;
         const int C = Connect4Board::COLS;
@@ -677,7 +671,7 @@ public:
             result[c] = win;
 
             // 4) undo de zet
-            board.setCell(r_play, c, Connect4Board::EMPTY);
+            board.setCell(r_play, c, Connect4Board::Player::EMPTY);
         }
 
         return result;
