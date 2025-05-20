@@ -174,6 +174,19 @@ public:
         }
         return false;
     }
+    bool inBoard(int r, int c) const
+    {
+        return r >= 0 && r < ROWS && c >= 0 && c < COLS;
+    }
+    int findRow(int c)
+    {
+        for (int row = ROWS - 1; row >= 0; --row)
+        {
+            if (getCell(row, c) == Connect4Board::Player::EMPTY)
+                return row;
+        }
+        return -1;
+    };
 };
 
 #endif // CONNECT4_BOARD_H
