@@ -3,40 +3,6 @@
 
 #include "include.h"
 
-// class TileContent
-// {
-// public:
-//     Connect4Board::Player OWNER;
-//     int PRESSURE;
-//     bool THREAD;
-//     bool WINCHANCE;
-//     int MINOR_THREADS;
-//     int MINOR_WINCHANCE;
-//     bool AUTOMATIC_WIN;
-
-//     TileContent()
-//         : OWNER(Connect4Board::Player::EMPTY),
-//           PRESSURE(0),
-//           THREAD(false),
-//           WINCHANCE(false),
-//           MINOR_THREADS(0),
-//           MINOR_WINCHANCE(0),
-//           AUTOMATIC_WIN(false)
-//     {
-//     }
-
-//     bool operator==(const TileContent &other) const
-//     {
-//         return OWNER == other.OWNER &&
-//                PRESSURE == other.PRESSURE &&
-//                THREAD == other.THREAD &&
-//                WINCHANCE == other.WINCHANCE &&
-//                MINOR_THREADS == other.MINOR_THREADS &&
-//                MINOR_WINCHANCE == other.MINOR_WINCHANCE &&
-//                AUTOMATIC_WIN == other.AUTOMATIC_WIN;
-//     }
-// };
-
 class GameTheorie
 {
 public:
