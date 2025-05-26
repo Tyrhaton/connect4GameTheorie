@@ -14,25 +14,19 @@ enum Column
     G = 6
 };
 
+enum Player
+{
+    EMPTY = 0,
+    PLAYER1 = 1,
+    PLAYER2 = 2
+};
+
 class Connect4Board
 {
 public:
     static constexpr int ROWS = 6;
     static constexpr int COLS = 7;
 
-    enum Player
-    {
-        EMPTY = 0,
-        PLAYER1 = 1,
-        PLAYER2 = 2
-    };
-
-    // enum Cell
-    // {
-    //     EMPTY = Player::EMPTY,
-    //     PLAYER1 = Player::PLAYER1,
-    //     PLAYER2 = Player::PLAYER2
-    // };
     enum Mark
     {
         EMPTYMARK = '.',
@@ -49,6 +43,10 @@ public:
             row.fill(Player::EMPTY);
         }
     }
+
+    /**
+     * Print the current state of the board to the console.
+     */
     void print() const
     {
         for (int r = 0; r < ROWS; ++r)
@@ -76,70 +74,75 @@ public:
         }
         cout << "\n";
     }
-    bool dropDisc(Column col, Player player)
+
+    /**
+     * Drop a disc in the specified column for the given player.
+     * @param column The column to drop the disc in.
+     * @param player The player dropping the disc.
+     * @return True if the move results in a win, false otherwise.
+     */
+    bool dropDisc(Column column, Player player)
     {
-        if (col < 0 || col >= COLS)
+        if (column < 0 || column >= COLS)
             throw out_of_range("Column index out of range");
         for (int row = ROWS - 1; row >= 0; --row)
         {
-            if (grid[row][col] == EMPTY)
+            if (grid[row][column] == EMPTY)
             {
-                setCell(row, col, player);
+                setCell(row, column, player);
                 bool win = checkWin(player);
                 return win;
             }
         }
         throw runtime_error("Column is full");
     }
-    bool checkDirection(int row, int col, Player player, int dx, int dy) const
-    {
-        int count = 1;
-        count += countInDirection(row, col, player, dx, dy);
-        count += countInDirection(row, col, player, -dx, -dy);
-        return count >= 4;
-    }
 
-    int countInDirection(int row, int col, Player player, int dx, int dy) const
-    {
-        int r = row + dy;
-        int c = col + dx;
-        int cnt = 0;
-        while (r >= 0 && r < ROWS && c >= 0 && c < COLS && grid[r][c] == player)
-        {
-            ++cnt;
-            r += dy;
-            c += dx;
-        }
-        return cnt;
-    }
-
-    // bool checkWin(int row, int col, Player player) const
-    // {
-    //     return checkDirection(row, col, player, 1, 0) || checkDirection(row, col, player, 0, 1) || checkDirection(row, col, player, 1, 1) || checkDirection(row, col, player, 1, -1);
-    // }
-
+    /**
+     * Get the current state of a cell in the grid.
+     * @param row The row index.
+     * @param col The column index.
+     * @return The Player at the specified cell.
+     */
     Player getCell(int row, int col) const
     {
         if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
             throw out_of_range("Row or column index out of range");
         return grid[row][col];
     }
-    void setCell(int row, int col, Player val)
+
+    /**
+     * Set the state of a cell in the grid.
+     * @param row The row index.
+     * @param column The column index.
+     * @param val The Player value to set at the specified cell.
+     */
+    void setCell(int row, int column, Player val)
     {
         // optionele bound-checks:
-        if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
+        if (row < 0 || row >= ROWS || column < 0 || column >= COLS)
         {
             throw out_of_range("Connect4Board::setCell: index out of range");
         }
-        grid[row][col] = val;
+        grid[row][column] = val;
     }
+
+    /**
+     * Get the opponent of the specified player.
+     * @param player The current player.
+     * @return The opponent player.
+     */
     Player getOponent(Player player) const
     {
         return (player == PLAYER1) ? PLAYER2 : PLAYER1;
     }
-    bool checkWin(Connect4Board::Player player) const
+
+    /**
+     * Check if the specified player has won the game.
+     * @param player The player to check for a win.
+     * @return True if the player has won, false otherwise.
+     */
+    bool checkWin(Player player) const
     {
-        // vier richtingen: horizontaal, verticaal, diag-up, diag-down
         static constexpr int dr[4] = {0, 1, 1, 1};
         static constexpr int dc[4] = {1, 0, 1, -1};
 
@@ -148,19 +151,16 @@ public:
             return r >= 0 && r < ROWS && c >= 0 && c < COLS;
         };
 
-        // voor elke cel als start
         for (int r = 0; r < ROWS; ++r)
         {
             for (int c = 0; c < COLS; ++c)
             {
                 if (getCell(r, c) != player)
                     continue;
-                // in elke richting 4 op een rij checken
                 for (int dir = 0; dir < 4; ++dir)
                 {
                     int cnt = 1;
                     int rr = r + dr[dir], cc = c + dc[dir];
-                    // tel zo lang er dezelfde speler op staat
                     while (inBoard(rr, cc) && getCell(rr, cc) == player)
                     {
                         ++cnt;
@@ -174,19 +174,50 @@ public:
         }
         return false;
     }
+
+    /**
+     * Check if the specified row and column are within the bounds of the board.
+     * @param r The row index.
+     * @param c The column index.
+     * @return True if the indices are within bounds, false otherwise.
+     */
     bool inBoard(int r, int c) const
     {
         return r >= 0 && r < ROWS && c >= 0 && c < COLS;
     }
-    int findRow(int c)
+
+    /**
+     * Find the lowest empty row in the specified column.
+     * @param column The column to check.
+     * @return The row index of the lowest empty cell, or -1 if the column is full.
+     */
+    int findRow(int column)
     {
         for (int row = ROWS - 1; row >= 0; --row)
         {
-            if (getCell(row, c) == Connect4Board::Player::EMPTY)
+            if (getCell(row, column) == Player::EMPTY)
                 return row;
         }
         return -1;
-    };
+    }
+
+    /**
+     * Adds functionality to compare 2 boards their grid
+     * @return true if the grids are equal, false otherwise
+     */
+    bool operator==(const Connect4Board &other) const
+    {
+        return this->grid == other.grid;
+    }
+
+    /**
+     * Adds functionality to check if 2 boards their grid are not equal
+     * @return true if the grids are not equal, false otherwise
+     */
+    bool operator!=(const Connect4Board &other) const
+    {
+        return !(*this == other);
+    }
 };
 
 #endif // CONNECT4_BOARD_H

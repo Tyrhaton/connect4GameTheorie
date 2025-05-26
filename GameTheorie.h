@@ -9,8 +9,8 @@ public:
     static constexpr int ROWS = Connect4Board::ROWS;
     static constexpr int COLS = Connect4Board::COLS;
 
-    Connect4Board::Player PLAYER = Connect4Board::Player::EMPTY;
-    Connect4Board::Player OPPONENT = Connect4Board::Player::EMPTY;
+    Player PLAYER = Player::EMPTY;
+    Player OPPONENT = Player::EMPTY;
 
     // array<array<TileContent, COLS>, ROWS> grid;
 
@@ -27,7 +27,7 @@ public:
         HARD = 2
     };
 
-    GameTheorie(Connect4Board::Player player, Connect4Board::Player opponent)
+    GameTheorie(Player player = Player::PLAYER1, Player opponent = Player::PLAYER2)
     {
         // for (auto &row : grid)
         // {
@@ -37,7 +37,13 @@ public:
         OPPONENT = opponent;
     }
 
-    Column getBestMove(Connect4Board board, Connect4Board::Player player, GameTheorie::Level level, bool debug)
+    /**
+     * Get the best move for the current player
+     * @param board The current state of the board
+     * @param player The current player
+     * @return The best move as a Column
+     */
+    Column getBestMove(Connect4Board board, Player player, GameTheorie::Level level = EASY, bool debug = false)
     {
         (void)level; // Unused parameter
         vector<Column> possibleMoves = getPossibleMoves(board);
@@ -168,6 +174,11 @@ public:
         return bestMove;
     }
 
+    /**
+     * Get all possible moves for the current player
+     * @param board The current state of the board
+     * @return A vector of Columns representing possible moves
+     */
     vector<Column> getPossibleMoves(Connect4Board board)
     {
         // Check for possible moves in the current board state
@@ -177,7 +188,7 @@ public:
         {
             for (int row = ROWS - 1; row >= 0; --row)
             {
-                if (board.getCell(row, col) == Connect4Board::Player::EMPTY)
+                if (board.getCell(row, col) == Player::EMPTY)
                 {
                     validMoves.push_back(static_cast<Column>(col));
                     break;
@@ -188,10 +199,16 @@ public:
         return validMoves;
     }
 
+    /**
+     * Count the pressure sum for each column
+     * @param board The current state of the board
+     * @param player The current player
+     * @return A vector of pressure values for each column
+     */
     vector<int> countPressureSum(const Connect4Board &board,
-                                 Connect4Board::Player player)
+                                 Player player)
     {
-        Connect4Board::Player opponent = board.getOponent(player);
+        Player opponent = board.getOponent(player);
 
         vector<int> pressure(COLS, -1);
 
@@ -201,7 +218,7 @@ public:
             int r_play = -1;
             for (int row = ROWS - 1; row >= 0; --row)
             {
-                if (board.getCell(row, column) == Connect4Board::Player::EMPTY)
+                if (board.getCell(row, column) == Player::EMPTY)
                 {
                     r_play = row;
                     break;
@@ -274,17 +291,17 @@ public:
     }
 
     /**
-     * return per kolom (A…G) het aantal win‐opties voor de speelbare tegel in die kolom.
-     * Als kolom vol is, krijg je -1.
+     * Count the number of winning options for each column
+     * @param board The current state of the board
+     * @param player The current player
+     * @return A vector of win option counts for each column, returning -1 for full columns
      */
     vector<int> countWinOptions(
         const Connect4Board &board,
-        Connect4Board::Player player)
+        Player player)
     {
-        // bepaal de tegenstander
-        Connect4Board::Player opponent = board.getOponent(player);
+        Player opponent = board.getOponent(player);
 
-        // output per kolom
         vector<int> result(COLS, -1);
 
         for (int column = 0; column < COLS; ++column)
@@ -293,7 +310,7 @@ public:
             int r_play = -1;
             for (int row = ROWS - 1; row >= 0; --row)
             {
-                if (board.getCell(row, column) == Connect4Board::Player::EMPTY)
+                if (board.getCell(row, column) == Player::EMPTY)
                 {
                     r_play = row;
                     break;
@@ -356,69 +373,66 @@ public:
     }
 
     /**
-     * isImmediateThreat(board, opponent)
-     *   Retourneert een vector van size COLS met per kolom:
-     *     • true  als de tegenstander, wanneer hij in die kolom speelt, direct
-     *            4-op-een-rij heeft
-     *     • false anders (of kolom vol)
+     * Compute immediate threats for the current player
+     * @param board The current state of the board
+     * @param player The current player
+     * @return A vector of booleans indicating immediate threats for each column
      */
     vector<bool> computeImmediateThreats(
         Connect4Board &board,
-        Connect4Board::Player player)
+        Player player)
     {
-        Connect4Board::Player opponent = board.getOponent(player);
+        Player opponent = board.getOponent(player);
 
         vector<bool> threat(COLS, false);
 
-        // voor elke kolom c
         for (int column = 0; column < COLS; ++column)
         {
             int row = board.findRow(column);
             if (row < 0)
             {
-                // kolom vol: geen threat
                 threat[column] = false;
                 continue;
             }
-            // simuleer tegenstander speelt hier:
             Connect4Board copy = board;
             copy.setCell(row, column, opponent);
-            // check of hij gewonnen heeft
             if (copy.checkWin(opponent))
             {
                 threat[column] = true;
             }
-            // anders blijft false
         }
 
         return threat;
     }
 
+    /**
+     * Compute minor threats for the current player
+     * @param board The current state of the board
+     * @param player The current player
+     * @return A vector of booleans indicating minor threats for each column
+     */
     vector<bool> computeMinorThreats(
         const Connect4Board &board,
-        Connect4Board::Player player)
+        Player player)
     {
-        Connect4Board::Player opponent = board.getOponent(player);
+        Player opponent = board.getOponent(player);
 
         vector<bool> result(COLS, false);
 
-        // scan elke kolom
         for (int column = 0; column < COLS; column++)
         {
-            // spelbare rij zoeken
             int r_play = -1;
             for (int row = ROWS - 1; row >= 0; row--)
             {
-                if (board.getCell(row, column) == Connect4Board::Player::EMPTY)
+                if (board.getCell(row, column) == Player::EMPTY)
                 {
                     r_play = row;
                     break;
                 }
             }
             if (r_play < 0)
-                continue; // kolom vol => false
+                continue;
 
-            // is er een 4-window dat G=r_play,c minor-threat is?
             bool isMinor = false;
 
             for (int dir = 0; dir < 4 && !isMinor; dir++)
@@ -429,7 +443,6 @@ public:
                     int sc = column - dc4[dir] * off;
                     if (!board.inBoard(sr, sc))
                         continue;
-                    // tel in dit window
                     int countOp = 0, countEmp = 0, countMe = 0;
                     bool covers = false;
                     for (int k = 0; k < 4; k++)
@@ -439,15 +452,15 @@ public:
                         if (!board.inBoard(rr, cc))
                         {
                             countMe = 1;
-                            break; // ongeldig
+                            break;
                         }
-                        Connect4Board::Player cell = board.getCell(rr, cc);
+                        Player cell = board.getCell(rr, cc);
                         if (rr == r_play && cc == column)
                         {
                             covers = true;
                             countEmp++;
                         }
-                        else if (cell == Connect4Board::Player::EMPTY)
+                        else if (cell == Player::EMPTY)
                         {
                             countEmp++;
                         }
@@ -456,11 +469,10 @@ public:
                             countOp++;
                         }
                         else
-                        { // me
+                        {
                             countMe++;
                         }
                     }
-                    // conditions minor threat
                     if (covers && countOp == 2 && countMe == 0 && countEmp == 2)
                     {
                         isMinor = true;
@@ -471,7 +483,6 @@ public:
             if (!isMinor)
                 continue;
 
-            // check adjacency aan opponent
             bool adj = false;
             for (int k = 0; k < 8 && !adj; k++)
             {
@@ -489,27 +500,23 @@ public:
     }
 
     /**
-     * computeWinningMoves(board, player)
-     *   voor elke kolom c:
-     *     - vind de speelbare rij r in die kolom (de laagste lege rij)
-     *     - als kolom vol: result[c] = false
-     *     - anders: simuleer dat `player` daar zet en check of hij/zij wint
-     *   return vector<bool>(COLS)
+     * Compute winning moves for the current player
+     * @param board The current state of the board
+     * @param player The current player
+     * @return A vector of booleans indicating winning moves for each column
      */
     vector<bool> computeWinningMoves(
         Connect4Board board,
-        Connect4Board::Player player)
+        Player player)
     {
         vector<bool> result(COLS, false);
 
-        // voor elke kolom
         for (int column = 0; column < COLS; column++)
         {
-            // 1) vind de speelbare rij in kolom c
             int r_play = -1;
             for (int row = ROWS - 1; row >= 0; row--)
             {
-                if (board.getCell(row, column) == Connect4Board::Player::EMPTY)
+                if (board.getCell(row, column) == Player::EMPTY)
                 {
                     r_play = row;
                     break;
@@ -517,21 +524,17 @@ public:
             }
             if (r_play < 0)
             {
-                // kolom vol => niet winnend
                 result[column] = false;
                 continue;
             }
 
-            // 2) simuleer de zet
             board.setCell(r_play, column, player);
 
-            // 3) check direct vier-op-een-rij
             bool win = false;
 
             for (int dir = 0; dir < 4 && !win; dir++)
             {
                 int count = 1;
-                // beide kanten van (r_play,c) uitchecken
                 for (int dsign = -1; dsign <= 1; dsign += 2)
                 {
                     int rr = r_play + dr4[dir] * dsign;
@@ -549,8 +552,7 @@ public:
 
             result[column] = win;
 
-            // 4) undo de zet
-            board.setCell(r_play, column, Connect4Board::Player::EMPTY);
+            board.setCell(r_play, column, Player::EMPTY);
         }
 
         return result;
