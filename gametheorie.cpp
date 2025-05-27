@@ -41,11 +41,17 @@ int main()
 {
     // Initialisation
     cout << "Starting game theorie" << endl;
+    
 
     Connect4Board board;
-    Connect4Board::Player player = Connect4Board::Player::PLAYER1;
-    Connect4Board::Player opponent = board.getOponent(player);
+    Player player = Player::PLAYER1;
+    Player opponent = board.getOponent(player);
     GameTheorie brain = GameTheorie(player, opponent);
+
+    board.dropDisc(Column::B, Player::PLAYER1);
+    board.dropDisc(Column::B, Player::PLAYER1);
+    board.dropDisc(Column::B, Player::PLAYER1);
+    // int best = brain.getBestMoveWithVisualization(board, player, opponent, 3, "tree.dot");
 
     // Config
     bool debug = true;
@@ -53,12 +59,12 @@ int main()
     // Connect4Board::Cell startingPlayer = Connect4Board::PLAYER1;
 
     // Preset
-    // b.dropDisc(Column::B, Connect4Board::PLAYER1);
-    // b.dropDisc(Column::C, Connect4Board::PLAYER2);
-    // b.dropDisc(Column::D, Connect4Board::PLAYER1);
-    // b.dropDisc(Column::B, Connect4Board::PLAYER2);
-    // b.dropDisc(Column::D, Connect4Board::PLAYER1);
-    // b.dropDisc(Column::G, Connect4Board::PLAYER2);
+    // board.dropDisc(Column::B, Player::PLAYER1);
+    // board.dropDisc(Column::C, Player::PLAYER2);
+    // board.dropDisc(Column::D, Player::PLAYER1);
+    // board.dropDisc(Column::B, Player::PLAYER2);
+    // board.dropDisc(Column::D, Player::PLAYER1);
+    // board.dropDisc(Column::G, Player::PLAYER2);
 
     bool run = true;
 

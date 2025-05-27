@@ -146,11 +146,6 @@ public:
         static constexpr int dr[4] = {0, 1, 1, 1};
         static constexpr int dc[4] = {1, 0, 1, -1};
 
-        auto inBoard = [&](int r, int c)
-        {
-            return r >= 0 && r < ROWS && c >= 0 && c < COLS;
-        };
-
         for (int r = 0; r < ROWS; ++r)
         {
             for (int c = 0; c < COLS; ++c)
@@ -199,6 +194,19 @@ public:
                 return row;
         }
         return -1;
+    }
+
+    bool columnHasSpace(Column column) const
+    {
+
+        for (int row = ROWS - 1; row >= 0; --row)
+        {
+            if (getCell(row, column) == Player::EMPTY)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

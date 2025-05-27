@@ -7,10 +7,12 @@
 #include <stdexcept>
 #include <vector>
 #include <set>
+#include <limits>  
 
 using namespace std;
 
 #include "Connect4Board.h"
 #include "GameTheorie.h"
+#include "tree.h"
 
 #endif // INCLUDE_H

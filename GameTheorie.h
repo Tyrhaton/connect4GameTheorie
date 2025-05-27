@@ -2,6 +2,11 @@
 #define GAMETHEORIE_H
 
 #include "include.h"
+#include <limits>
+#include <functional>
+#include <fstream>
+#include <sstream>
+#include "tree.h"
 
 class GameTheorie
 {
@@ -26,6 +31,14 @@ public:
         MEDIUM = 1,
         HARD = 2
     };
+    struct TileMetrics
+    {
+        int pressure;
+        int winOptions;
+        bool immediateThreat;
+        bool minorThreat;
+        bool winningMove;
+    };
 
     GameTheorie(Player player = Player::PLAYER1, Player opponent = Player::PLAYER2)
     {
@@ -35,6 +48,79 @@ public:
         // }
         PLAYER = player;
         OPPONENT = opponent;
+    }
+
+    /**
+     * Generate metrics for the current layer
+     * @param board The current state of the board
+     * @param player The current player
+     * @return An array of TileMetrics for each column
+     */
+    array<TileMetrics, 7> generateMetricsForLayer(Connect4Board &board, Player player)
+    {
+        vector<int> pressure = countPressureSum(board, player);
+        vector<int> winOptions = countWinOptions(board, player);
+        vector<bool> threats = computeImmediateThreats(board, player);
+        vector<bool> minorThreats = computeMinorThreats(board, player);
+        vector<bool> winMoves = computeWinningMoves(board, player);
+
+        array<TileMetrics, 7> metrics;
+
+        for (int col = 0; col < 7; ++col)
+        {
+            metrics[col] = TileMetrics{
+                pressure[col],
+                winOptions[col],
+                threats[col],
+                minorThreats[col],
+                winMoves[col]};
+        }
+        return metrics;
+    }
+
+    // void test(Connect4Board &board, Player player, Player opponent)
+    // {
+
+    //     Connect4Board currentBoard = board;
+
+    //     for (int column = 0; column < 7; ++column)
+    //     {
+    //         Connect4Board copy = board;
+    //         copy.dropDisc(static_cast<Column>(column), player);
+
+    //         array<TileMetrics, 7> metricsMe = generateMetricsForLayer(copy, opponent);
+    //         for (int i = 0; i < 7; ++i)
+    //         {
+
+    //             Connect4Board copy2 = copy;
+    //             copy2.dropDisc(static_cast<Column>(i), opponent);
+
+    //             array<TileMetrics, 7> metricsMe = generateMetricsForLayer(copy2, player);
+    //         }
+    //     }
+    // }
+    // Check if a column can accept a disc
+    inline bool canPlay(const Connect4Board &board, int col)
+    {
+
+        for (int row = ROWS - 1; row >= 0; --row)
+        {
+            if (board.getCell(row, col) == Player::EMPTY)
+            {
+                return true;
+                break;
+            }
+        }
+        return false;
+    }
+
+    // Determine if board is full (no more moves)
+    bool boardFull(const Connect4Board &board)
+    {
+        for (int c = 0; c < Connect4Board::COLS; ++c)
+            if (canPlay(board, c))
+                return false;
+        return true;
     }
 
     /**
@@ -557,5 +643,87 @@ public:
 
         return result;
     }
+
+    void generateTree(
+        Connect4Board &board,
+        Player player,
+        Player opponent,
+        int depth)
+    {
+
+        TreeNode *root = new TreeNode("Root");
+
+        Tree tree = Tree(root);
+
+        addLayer(board, player, opponent, depth, root);
+
+        tree.print();
+        tree.toDot("tree.dot");
+    }
+bool addLayer(
+    Connect4Board &board,
+    Player player,
+    Player opponent,
+    int depth,
+    TreeNode *parent)
+{
+    if (depth <= 0 || boardFull(board)) return true;
+
+    auto moves = getPossibleMoves(board);
+    std::vector<TreeNode*> children;
+
+    // First pass: generate children, but do not delete parent here
+    for (const Column &col : moves) {
+        // Skip full columns
+        if (board.findRow(col) < 0) continue;
+
+        Connect4Board copy = board;
+        copy.dropDisc(col, player);
+
+        // Check if opponent can win after this move in any column
+        bool allowsOpponentWin = false;
+        for (const Column &oppCol : getPossibleMoves(copy)) {
+            Connect4Board after = copy;
+            after.dropDisc(oppCol, opponent);
+            if (after.checkWin(opponent)) {
+                allowsOpponentWin = true;
+                break;
+            }
+        }
+        if (allowsOpponentWin) continue;  // skip this move entirely
+
+        // Create child node
+        TreeNode *child = new TreeNode("Col " + std::to_string(col),
+                                       player == PLAYER1 ? 1 : 2);
+        if (copy.checkWin(player)) {
+            child->win = true;
+            child->label += " (win)";
+        }
+        children.push_back(child);
+    }
+
+    // If any winning child, prune siblings
+    bool anyWin = std::any_of(children.begin(), children.end(), [](TreeNode* c){ return c->win; });
+    if (anyWin) {
+        for (TreeNode *c : children) {
+            if (c->win)
+                parent->addChild(c);
+            else
+                delete c;
+        }
+        return true;
+    }
+
+    // Attach and recurse
+    for (TreeNode *c : children) {
+        parent->addChild(c);
+        Connect4Board nextBoard = board;
+        nextBoard.dropDisc(static_cast<Column>(c->label.back() - '0'), player);
+        addLayer(nextBoard, opponent, player, depth - 1, c);
+    }
+
+    return true;
+}
+
 };
 #endif // GAMETHEORIE_H
