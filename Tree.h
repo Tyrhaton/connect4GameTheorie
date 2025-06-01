@@ -4,37 +4,25 @@
 #include "include.h"
 
 class TreeNode;
-
 inline void deleteSubtree(TreeNode *node);
 
 class TreeNode
 {
 public:
-    static int nextId;
-    int id;
+    Column move;
     std::string label;
-    std::string color;
     int owner;
     bool win;
-    std::vector<TreeNode *> children;
     TileMetrics metrics;
-    Column move;
+    int id;
+    static int nextId;
+    std::string color;
+    std::vector<TreeNode *> children;
 
     TreeNode(Column move_, const std::string label_, int owner_ = 0, bool win_ = false, TileMetrics metrics_ = {0, 0, false, false, false})
-        : move(move_), id(nextId++), label(label_), owner(owner_), win(win_), metrics(metrics_)
+        : move(move_), label(label_), owner(owner_), win(win_), metrics(metrics_), id(nextId++), color(), children()
     {
         // Set color based on owner
-        switch (owner_)
-        {
-        case 1:
-            color = "lightblue";
-            break;
-        case 2:
-            color = "lightcoral";
-            break;
-        default:
-            color = "white";
-        }
     }
 
     // Add an existing TreeNode as child
@@ -88,7 +76,7 @@ public:
 
             Connect4Board copy = board;
             int row = copy.findRow(col);
-            TileMetrics metrics = GameTheorie::generateMetricsForTile(copy, player, row, col);
+            TileMetrics metrics = Metrics::generateMetricsForTile(copy, player, row, col);
 
             copy.dropDisc(col, player);
 
@@ -111,8 +99,8 @@ public:
 
             TreeNode *child = new TreeNode(
                 col,
-                colToChar(col),
-                (player == PLAYER1 ? 1 : 2),
+                Connect4Board::colToChar(col),
+                (player == Player::PLAYER1 ? 1 : 2),
                 copy.checkWin(player),
                 metrics);
 
@@ -208,7 +196,7 @@ public:
 
     void removeAllBranchesExcept(Column col)
     {
-        cout << children.size() << " children before pruning branches except " << colToChar(col) << endl;
+        cout << children.size() << " children before pruning branches except " << Connect4Board::colToChar(col) << endl;
         for (TreeNode *it : children)
         {
             if (it->move != col)
@@ -277,36 +265,61 @@ public:
     // Export tree to Graphviz DOT file with node colors
     void toDot(const std::string &filename = "tree.dot") const
     {
-        std::ofstream ofs(filename);
+        ofstream ofs(filename);
         ofs << "digraph G {\n"
                "  rankdir=LR;\n"
                "  node [shape=box, style=filled, fontcolor=black];\n"
                "  edge [arrowsize=0.7];\n";
-        std::function<void(const TreeNode *, bool)> dfs = [&](const TreeNode *n, bool root)
-        {
-            // Node definition with label and fillcolor
-            if (root)
-            {
-                ofs << "  node" << n->id
-                    << " [label=\"Root\", fillcolor=\"lightgrey\"];\n";
-            }
-            else
-            {
-                ofs << "  node" << n->id
-                    << " [label=\"" << n->label << " W=" << (n->win ? "1" : "0") << " T=" << (n->metrics.immediateThreat ? "1" : "0") << " t=" << (n->metrics.minorThreat ? "1" : "0") << " p=" << n->metrics.pressure << " w=" << n->metrics.winOptions << "\", fillcolor=\"" << n->color << "\"];\n";
-            }
-            // Edges and recurse
-            for (const TreeNode *c : n->children)
-            {
-                ofs << "  node" << n->id << " -> node" << c->id << ";\n";
-                dfs(c, false);
-            }
-        };
+
         if (root)
-            dfs(root, true);
+        {
+            string dfs_ = dfs(root, true);
+            ofs << dfs_;
+        }
         ofs << "}\n";
         ofs.close();
     }
+    string dfs(const TreeNode *n, bool root) const
+    {
+
+        string color;
+        switch (n->owner)
+        {
+        case 1:
+            color = "lightblue";
+            break;
+        case 2:
+            color = "lightcoral";
+            break;
+        default:
+            color = "white";
+        }
+        // Node definition with label and fillcolor
+        string ofs = "";
+        if (root)
+        {
+            ofs += "  node" + std::to_string(n->id) + " [label=\"Root\", fillcolor=\"lightgrey\"];\n";
+        }
+        else
+        {
+            ofs += "  node" + std::to_string(n->id) + " [label=\"" + n->label +
+                   " W=" + (n->win ? "1" : "0") +
+                   " T=" + (n->metrics.immediateThreat ? "1" : "0") +
+                   " t=" + (n->metrics.minorThreat ? "1" : "0") +
+                   " p=" + std::to_string(n->metrics.pressure) +
+                   " w=" + std::to_string(n->metrics.winOptions) +
+                   "\", fillcolor=\"" + color + "\"];\n";
+        }
+        // Edges and recurse
+        for (const TreeNode *c : n->children)
+        {
+            ofs += "  node" + std::to_string(n->id) + " -> node" + std::to_string(c->id) + ";\n";
+            string dfsChild = dfs(c, false);
+            ofs += dfsChild;
+        }
+
+        return ofs;
+    };
 
     void dotToSvg(const string &dotFile = "tree.dot", const string &svgFile = "tree.svg") const
     {
@@ -450,7 +463,7 @@ public:
         root = newRoot;
     }
 
-    void moveRootUp(Connect4Board &board, Column column)
+    void moveRootUp(Column column)
     {
         root->removeAllBranchesExcept(column);
 

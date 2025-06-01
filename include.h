@@ -11,12 +11,16 @@
 #include <fstream>
 #include <functional>
 #include <sstream>
-#include <cstdlib> 
+#include <cstdlib>
 
 using namespace std;
 
 #include "Connect4Board.h"
+using Column = Connect4Board::Column;
+using Player = Connect4Board::Player;
+
+#include "Metrics.h"
+#include "Tree.h"
 #include "GameTheorie.h"
-#include "tree.h"
 
 #endif // INCLUDE_H

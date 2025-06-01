@@ -3,67 +3,132 @@
 
 #include "include.h"
 
-enum Column
-{
-    A = 0,
-    B = 1,
-    C = 2,
-    D = 3,
-    E = 4,
-    F = 5,
-    G = 6
-};
-
-string colToChar(Column col)
-{
-    // return char('A' + static_cast<int>(col));
-    switch (col)
-    {
-    case Column::A:
-        return std::string(1, 'A');
-    case Column::B:
-        return std::string(1, 'B');
-    case Column::C:
-        return std::string(1, 'C');
-    case Column::D:
-        return std::string(1, 'D');
-    case Column::E:
-        return std::string(1, 'E');
-    case Column::F:
-        return std::string(1, 'F');
-    case Column::G:
-        return std::string(1, 'G');
-    default:
-        throw std::invalid_argument("Invalid column");
-    }
-}
-
-enum Player
-{
-    EMPTY = 0,
-    PLAYER1 = 1,
-    PLAYER2 = 2
-};
-
 class Connect4Board
 {
 public:
+    /**
+     * Constants for the dimensions of the Connect 4 board.
+     * ROWS = 6, COLS = 7
+     */
     static constexpr int ROWS = 6;
     static constexpr int COLS = 7;
 
+    /**
+     * Enumeration for the different marks on the board.
+     */
     enum Mark
     {
         EMPTYMARK = '.',
         PLAYER1MARK = 'X',
         PLAYER2MARK = 'O'
     };
-    static void test()
+
+    /**
+     * Enumeration for the columns of the Connect 4 board.
+     * Each column is represented by a character from A to G.
+     */
+    enum Column
     {
-        cout << "Board test function called." << endl;
+        A = 0,
+        B = 1,
+        C = 2,
+        D = 3,
+        E = 4,
+        F = 5,
+        G = 6
+    };
+
+    /**
+     * Convert a character to a Column enumeration.
+     * @param c The character representing the column (A-G).
+     * @return The corresponding Column enumeration.
+     */
+    static Column charToColumn(char c)
+    {
+        switch (c)
+        {
+        case 'a':
+            return Column::A;
+        case 'A':
+            return Column::A;
+        case 'b':
+            return Column::B;
+        case 'B':
+            return Column::B;
+        case 'c':
+            return Column::C;
+        case 'C':
+            return Column::C;
+        case 'd':
+            return Column::D;
+        case 'D':
+            return Column::D;
+        case 'e':
+            return Column::E;
+        case 'E':
+            return Column::E;
+        case 'f':
+            return Column::F;
+        case 'F':
+            return Column::F;
+        case 'g':
+            return Column::G;
+        case 'G':
+            return Column::G;
+        default:
+            throw std::invalid_argument("Invalid column character");
+        }
     }
 
+    /**
+     * Convert a character to a Column enumeration.
+     * @param column The character representing the column (A-G).
+     * @return The corresponding Column enumeration.
+     */
+    static string colToChar(Column column)
+    {
+        switch (column)
+        {
+        case Column::A:
+            return std::string(1, 'A');
+        case Column::B:
+            return std::string(1, 'B');
+        case Column::C:
+            return std::string(1, 'C');
+        case Column::D:
+            return std::string(1, 'D');
+        case Column::E:
+            return std::string(1, 'E');
+        case Column::F:
+            return std::string(1, 'F');
+        case Column::G:
+            return std::string(1, 'G');
+        default:
+            throw std::invalid_argument("Invalid column");
+        }
+    }
+
+    /**
+     * Enumeration for the players in the game.
+     * EMPTY represents an empty cell, PLAYER1 and PLAYER2 represent the two players.
+     */
+    enum Player
+    {
+        EMPTY = 0,
+        PLAYER1 = 1,
+        PLAYER2 = 2
+    };
+
+    /**
+     * The grid representing the Connect 4 board.
+     * Each cell can be EMPTY, PLAYER1, or PLAYER2.
+     */
     array<array<Player, COLS>, ROWS> grid;
 
+    /**
+     * Constructor for the Connect4Board class.
+     * Initializes the board to an empty state.
+     */
     Connect4Board()
     {
         for (auto &row : grid)
@@ -72,8 +137,11 @@ public:
         }
     }
 
+    static constexpr int dr[4] = {0, 1, 1, 1};
+    static constexpr int dc[4] = {1, 0, 1, -1};
+
     /**
-     * Print the current state of the board to the console.
+     * Print the current state of the board.
      */
     void print() const
     {
@@ -112,33 +180,16 @@ public:
     bool dropDisc(Column column, Player player)
     {
         if (column < 0 || column >= COLS)
+        {
             throw out_of_range("Column index out of range");
-        // for (int row = ROWS - 1; row >= 0; --row)
-        // {
-        //     if (grid[row][column] == EMPTY)
-        //     {
-        //         cout << "Dropping disc for player " << static_cast<int>(player) << " in column " << colToChar(column) << endl;
-        //         setCell(row, column, player);
-        //         bool win = checkWin(player);
-        //         return win;
-        //     }
-        // }
+        }
         int row = findRow(column);
-        // cout << "row: " << row << endl;
         if (row < 0)
         {
-            // Column is full; handle as needed (e.g. return false or throw)
             return false;
         }
-        // (Optional) move the debug‐print outside of any hot loop if you’re profiling
-        // cout << "Dropping disc for player " << static_cast<int>(player)
-        //      << " in column " << colToChar(column) << endl;
-
-        // setCell(ROWS - row - 1, COLS - column - 1, player);
         setCell(row, column, player);
         return checkWin(player);
-
-        throw runtime_error("Column is full");
     }
 
     /**
@@ -189,8 +240,6 @@ public:
      */
     bool checkWin(Player player) const
     {
-        static constexpr int dr[4] = {0, 1, 1, 1};
-        static constexpr int dc[4] = {1, 0, 1, -1};
 
         for (int r = 0; r < ROWS; ++r)
         {
@@ -232,33 +281,6 @@ public:
      * @param column The column to check.
      * @return The row index of the lowest empty cell, or -1 if the column is full.
      */
-    int findRow2(int column)
-    {
-        // for (int row = ROWS - 1; row >= 0; --row)
-        // {
-        //     if (getCell(row, column) == Player::EMPTY)
-        //         return row;
-        // }
-        cout << "searching column: " << column << endl;
-        for (int row = 0; row < ROWS; ++row)
-        {
-            // cout << "found row " << row << " [";
-            // for (int c = 0; c < COLS; ++c)
-            // {
-            //     cout << grid[row][c];
-            //     if (c < COLS - 1)
-            //         cout << ", ";
-            // }
-            // cout << "]" << endl;
-
-            Player cell = getCell(row, column);
-            if (cell == Player::EMPTY && cell != Player::PLAYER1 && cell != Player::PLAYER2)
-            {
-                return row;
-            }
-        }
-        return -1;
-    }
     int findRow(int column)
     {
         // Search from the bottom row up
@@ -270,6 +292,11 @@ public:
         return -1; // column is full
     }
 
+    /**
+     * Check if the specified column has space for a new disc.
+     * @param column The column to check.
+     * @return True if there is space in the column, false otherwise.
+     */
     bool columnHasSpace(Column column) const
     {
 
@@ -282,6 +309,11 @@ public:
         }
         return false;
     }
+
+    /**
+     * Check if the board is full (no empty cells).
+     * @return True if the board is full, false otherwise.
+     */
     bool full() const
     {
         for (int c = 0; c < COLS; ++c)
@@ -318,13 +350,6 @@ public:
 
         return validMoves;
     }
-
-    /**
-     * Generate metrics for the current layer
-     * @param board The current state of the board
-     * @param player The current player
-     * @return An array of TileMetrics for each column
-     */
 
     /**
      * Adds functionality to compare 2 boards their grid

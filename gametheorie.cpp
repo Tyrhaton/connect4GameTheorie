@@ -1,60 +1,29 @@
 #include "include.h"
 
-Column charToColumn(char c)
-{
-    switch (c)
-    {
-    case 'a':
-        return Column::A;
-    case 'A':
-        return Column::A;
-    case 'b':
-        return Column::B;
-    case 'B':
-        return Column::B;
-    case 'c':
-        return Column::C;
-    case 'C':
-        return Column::C;
-    case 'd':
-        return Column::D;
-    case 'D':
-        return Column::D;
-    case 'e':
-        return Column::E;
-    case 'E':
-        return Column::E;
-    case 'f':
-        return Column::F;
-    case 'F':
-        return Column::F;
-    case 'g':
-        return Column::G;
-    case 'G':
-        return Column::G;
-    default:
-        throw std::invalid_argument("Invalid column character");
-    }
-}
-
 int main()
 {
     // Initialisation
     cout << "Starting game theorie" << endl;
 
-    Connect4Board board;
-    Player player = Player::PLAYER1;
-    Player opponent = board.getOponent(player);
-    GameTheorie brain = GameTheorie(board, player, opponent);
+    Connect4Board initBoard;
 
-    // board.dropDisc(Column::B, Player::PLAYER1);
-    // board.dropDisc(Column::B, Player::PLAYER1);
-    // board.dropDisc(Column::B, Player::PLAYER1);
+    // initBoard.dropDisc(Column::B, Player::PLAYER1);
+    // initBoard.dropDisc(Column::B, Player::PLAYER1);
+    // initBoard.dropDisc(Column::B, Player::PLAYER1);
+
+    Player player = Player::PLAYER1;
+    Player opponent = initBoard.getOponent(player);
+    GameTheorie::Level level = GameTheorie::Level::EASY;
+
+    GameTheorie brain = GameTheorie(initBoard, player, opponent, 2, level);
+    Connect4Board board = brain.getBoard(); // Use the initial board state
+    // board.dropDisc(Column::D, Player::PLAYER1);
+
+    board.print();
     // int best = brain.getBestMoveWithVisualization(board, player, opponent, 3, "tree.dot");
 
     // Config
     bool debug = true;
-    GameTheorie::Level level = GameTheorie::Level::EASY;
     // Connect4Board::Cell startingPlayer = Connect4Board::PLAYER1;
 
     // Preset
@@ -65,7 +34,7 @@ int main()
     // board.dropDisc(Column::D, Player::PLAYER1);
     // board.dropDisc(Column::G, Player::PLAYER2);
 
-    bool run = true;
+    bool run = false;
 
     string move;
     while (run)
@@ -80,7 +49,7 @@ int main()
         }
         // player 1
 
-        Column col = charToColumn(move[0]);
+        Column col = Connect4Board::charToColumn(move[0]);
         bool player1Won = board.dropDisc(col, player);
         board.print();
         if (player1Won)

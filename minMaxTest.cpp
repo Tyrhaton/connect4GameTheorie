@@ -1,42 +1,5 @@
 #include "include.h"
 
-Column charToColumn(char c)
-{
-    switch (c)
-    {
-    case 'a':
-        return Column::A;
-    case 'A':
-        return Column::A;
-    case 'b':
-        return Column::B;
-    case 'B':
-        return Column::B;
-    case 'c':
-        return Column::C;
-    case 'C':
-        return Column::C;
-    case 'd':
-        return Column::D;
-    case 'D':
-        return Column::D;
-    case 'e':
-        return Column::E;
-    case 'E':
-        return Column::E;
-    case 'f':
-        return Column::F;
-    case 'F':
-        return Column::F;
-    case 'g':
-        return Column::G;
-    case 'G':
-        return Column::G;
-    default:
-        throw std::invalid_argument("Invalid column character");
-    }
-}
-
 int main()
 {
     // Initialisation
@@ -66,7 +29,7 @@ int main()
         }
         // player 1
 
-        Column col = charToColumn(move[0]);
+        Column col = Connect4Board::charToColumn(move[0]);
 
         bool player1Won = board.dropDisc(col, player);
         if (player1Won)
@@ -74,7 +37,7 @@ int main()
             cout << "Player 1 won!" << endl;
             break;
         }
-        tree->moveRootUp(board, col);
+        tree->moveRootUp(col);
         tree->grow(board, opponent, player, 1);
         tree->toDot();
         tree->dotToSvg();
@@ -87,7 +50,7 @@ int main()
         cout << "Enter your move (A-G) or 'exit' to quit: " << endl;
 
         getline(cin, move);
-        Column bestMove = charToColumn(move[0]);
+        Column bestMove = Connect4Board::charToColumn(move[0]);
 
         bool player2Won = board.dropDisc(bestMove, opponent);
 
@@ -97,7 +60,7 @@ int main()
             break;
         }
 
-        tree->moveRootUp(board, bestMove);
+        tree->moveRootUp(bestMove);
         tree->grow(board, player, opponent, 1);
         tree->toDot();
         tree->dotToSvg();
