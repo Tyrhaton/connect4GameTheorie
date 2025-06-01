@@ -189,6 +189,7 @@ public:
             return false;
         }
         setCell(row, column, player);
+
         return checkWin(player);
     }
 
