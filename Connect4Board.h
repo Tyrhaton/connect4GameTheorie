@@ -14,6 +14,30 @@ enum Column
     G = 6
 };
 
+string colToChar(Column col)
+{
+    // return char('A' + static_cast<int>(col));
+    switch (col)
+    {
+    case Column::A:
+        return std::string(1, 'A');
+    case Column::B:
+        return std::string(1, 'B');
+    case Column::C:
+        return std::string(1, 'C');
+    case Column::D:
+        return std::string(1, 'D');
+    case Column::E:
+        return std::string(1, 'E');
+    case Column::F:
+        return std::string(1, 'F');
+    case Column::G:
+        return std::string(1, 'G');
+    default:
+        throw std::invalid_argument("Invalid column");
+    }
+}
+
 enum Player
 {
     EMPTY = 0,
@@ -33,6 +57,10 @@ public:
         PLAYER1MARK = 'X',
         PLAYER2MARK = 'O'
     };
+    static void test()
+    {
+        cout << "Board test function called." << endl;
+    }
 
     array<array<Player, COLS>, ROWS> grid;
 
@@ -85,15 +113,31 @@ public:
     {
         if (column < 0 || column >= COLS)
             throw out_of_range("Column index out of range");
-        for (int row = ROWS - 1; row >= 0; --row)
+        // for (int row = ROWS - 1; row >= 0; --row)
+        // {
+        //     if (grid[row][column] == EMPTY)
+        //     {
+        //         cout << "Dropping disc for player " << static_cast<int>(player) << " in column " << colToChar(column) << endl;
+        //         setCell(row, column, player);
+        //         bool win = checkWin(player);
+        //         return win;
+        //     }
+        // }
+        int row = findRow(column);
+        // cout << "row: " << row << endl;
+        if (row < 0)
         {
-            if (grid[row][column] == EMPTY)
-            {
-                setCell(row, column, player);
-                bool win = checkWin(player);
-                return win;
-            }
+            // Column is full; handle as needed (e.g. return false or throw)
+            return false;
         }
+        // (Optional) move the debug‐print outside of any hot loop if you’re profiling
+        // cout << "Dropping disc for player " << static_cast<int>(player)
+        //      << " in column " << colToChar(column) << endl;
+
+        // setCell(ROWS - row - 1, COLS - column - 1, player);
+        setCell(row, column, player);
+        return checkWin(player);
+
         throw runtime_error("Column is full");
     }
 
@@ -107,6 +151,7 @@ public:
     {
         if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
             throw out_of_range("Row or column index out of range");
+        // return grid[ROWS - 1 - row][COLS - 1 - col];
         return grid[row][col];
     }
 
@@ -123,6 +168,7 @@ public:
         {
             throw out_of_range("Connect4Board::setCell: index out of range");
         }
+        // grid[ROWS - 1 - row][COLS - 1 - column] = val;
         grid[row][column] = val;
     }
 
@@ -186,14 +232,42 @@ public:
      * @param column The column to check.
      * @return The row index of the lowest empty cell, or -1 if the column is full.
      */
+    int findRow2(int column)
+    {
+        // for (int row = ROWS - 1; row >= 0; --row)
+        // {
+        //     if (getCell(row, column) == Player::EMPTY)
+        //         return row;
+        // }
+        cout << "searching column: " << column << endl;
+        for (int row = 0; row < ROWS; ++row)
+        {
+            // cout << "found row " << row << " [";
+            // for (int c = 0; c < COLS; ++c)
+            // {
+            //     cout << grid[row][c];
+            //     if (c < COLS - 1)
+            //         cout << ", ";
+            // }
+            // cout << "]" << endl;
+
+            Player cell = getCell(row, column);
+            if (cell == Player::EMPTY && cell != Player::PLAYER1 && cell != Player::PLAYER2)
+            {
+                return row;
+            }
+        }
+        return -1;
+    }
     int findRow(int column)
     {
+        // Search from the bottom row up
         for (int row = ROWS - 1; row >= 0; --row)
         {
             if (getCell(row, column) == Player::EMPTY)
                 return row;
         }
-        return -1;
+        return -1; // column is full
     }
 
     bool columnHasSpace(Column column) const
@@ -208,6 +282,49 @@ public:
         }
         return false;
     }
+    bool full() const
+    {
+        for (int c = 0; c < COLS; ++c)
+        {
+            if (columnHasSpace(static_cast<Column>(c)))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Get all possible moves for the current player
+     * @param board The current state of the board
+     * @return A vector of Columns representing possible moves
+     */
+    vector<Column> getPossibleMoves()
+    {
+        // Check for possible moves in the current board state
+        vector<Column> validMoves;
+
+        for (int col = 0; col < COLS; ++col)
+        {
+            for (int row = ROWS - 1; row >= 0; --row)
+            {
+                if (getCell(row, col) == Player::EMPTY)
+                {
+                    validMoves.push_back(static_cast<Column>(col));
+                    break;
+                }
+            }
+        }
+
+        return validMoves;
+    }
+
+    /**
+     * Generate metrics for the current layer
+     * @param board The current state of the board
+     * @param player The current player
+     * @return An array of TileMetrics for each column
+     */
 
     /**
      * Adds functionality to compare 2 boards their grid

@@ -41,16 +41,15 @@ int main()
 {
     // Initialisation
     cout << "Starting game theorie" << endl;
-    
 
     Connect4Board board;
     Player player = Player::PLAYER1;
     Player opponent = board.getOponent(player);
-    GameTheorie brain = GameTheorie(player, opponent);
+    GameTheorie brain = GameTheorie(board, player, opponent);
 
-    board.dropDisc(Column::B, Player::PLAYER1);
-    board.dropDisc(Column::B, Player::PLAYER1);
-    board.dropDisc(Column::B, Player::PLAYER1);
+    // board.dropDisc(Column::B, Player::PLAYER1);
+    // board.dropDisc(Column::B, Player::PLAYER1);
+    // board.dropDisc(Column::B, Player::PLAYER1);
     // int best = brain.getBestMoveWithVisualization(board, player, opponent, 3, "tree.dot");
 
     // Config
@@ -91,7 +90,6 @@ int main()
         }
 
         // player 2
-
         Column bestMove = brain.getBestMove(board, opponent, level, debug);
         bool player2Won = board.dropDisc(bestMove, opponent);
         board.print();

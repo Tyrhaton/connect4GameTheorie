@@ -2,21 +2,33 @@
 #define GAMETHEORIE_H
 
 #include "include.h"
-#include <limits>
-#include <functional>
-#include <fstream>
-#include <sstream>
-#include "tree.h"
+// #include "tree.h"
+struct TileMetrics
+{
+    int pressure;
+    int winOptions;
+    bool immediateThreat;
+    bool minorThreat;
+    bool winningMove;
+};
 
+class Tree;
 class GameTheorie
 {
 public:
     static constexpr int ROWS = Connect4Board::ROWS;
     static constexpr int COLS = Connect4Board::COLS;
 
+    Tree *tree = nullptr;
+    Connect4Board *board = nullptr;
+
     Player PLAYER = Player::EMPTY;
     Player OPPONENT = Player::EMPTY;
 
+    static void test()
+    {
+        cout << "GameTheorie test function called." << endl;
+    }
     // array<array<TileContent, COLS>, ROWS> grid;
 
     static constexpr int dr4[4] = {0, 1, 1, 1};
@@ -31,32 +43,32 @@ public:
         MEDIUM = 1,
         HARD = 2
     };
-    struct TileMetrics
-    {
-        int pressure;
-        int winOptions;
-        bool immediateThreat;
-        bool minorThreat;
-        bool winningMove;
-    };
 
-    GameTheorie(Player player = Player::PLAYER1, Player opponent = Player::PLAYER2)
+    GameTheorie(Connect4Board &board, Player player = Player::PLAYER1, Player opponent = Player::PLAYER2,
+                int depth = 2)
+        : PLAYER(player), OPPONENT(opponent)
     {
-        // for (auto &row : grid)
-        // {
-        //     row.fill(TileContent());
-        // }
-        PLAYER = player;
-        OPPONENT = opponent;
+        this->board = &board;
+        // tree = new Tree(board, player, opponent, depth);
+        // tree->toDot();
+        // tree->dotToSvg();
+    }
+    // Check if a column can accept a disc
+    inline bool canPlay(const Connect4Board &board, int col)
+    {
+
+        for (int row = ROWS - 1; row >= 0; --row)
+        {
+            if (board.getCell(row, col) == Player::EMPTY)
+            {
+                return true;
+                break;
+            }
+        }
+        return false;
     }
 
-    /**
-     * Generate metrics for the current layer
-     * @param board The current state of the board
-     * @param player The current player
-     * @return An array of TileMetrics for each column
-     */
-    array<TileMetrics, 7> generateMetricsForLayer(Connect4Board &board, Player player)
+    static array<TileMetrics, 7> generateMetricsForLayer(Connect4Board &board, Player player)
     {
         vector<int> pressure = countPressureSum(board, player);
         vector<int> winOptions = countWinOptions(board, player);
@@ -78,42 +90,6 @@ public:
         return metrics;
     }
 
-    // void test(Connect4Board &board, Player player, Player opponent)
-    // {
-
-    //     Connect4Board currentBoard = board;
-
-    //     for (int column = 0; column < 7; ++column)
-    //     {
-    //         Connect4Board copy = board;
-    //         copy.dropDisc(static_cast<Column>(column), player);
-
-    //         array<TileMetrics, 7> metricsMe = generateMetricsForLayer(copy, opponent);
-    //         for (int i = 0; i < 7; ++i)
-    //         {
-
-    //             Connect4Board copy2 = copy;
-    //             copy2.dropDisc(static_cast<Column>(i), opponent);
-
-    //             array<TileMetrics, 7> metricsMe = generateMetricsForLayer(copy2, player);
-    //         }
-    //     }
-    // }
-    // Check if a column can accept a disc
-    inline bool canPlay(const Connect4Board &board, int col)
-    {
-
-        for (int row = ROWS - 1; row >= 0; --row)
-        {
-            if (board.getCell(row, col) == Player::EMPTY)
-            {
-                return true;
-                break;
-            }
-        }
-        return false;
-    }
-
     // Determine if board is full (no more moves)
     bool boardFull(const Connect4Board &board)
     {
@@ -132,7 +108,7 @@ public:
     Column getBestMove(Connect4Board board, Player player, GameTheorie::Level level = EASY, bool debug = false)
     {
         (void)level; // Unused parameter
-        vector<Column> possibleMoves = getPossibleMoves(board);
+        vector<Column> possibleMoves = board.getPossibleMoves();
         if (possibleMoves.empty())
         {
             throw runtime_error("No possible moves available.");
@@ -261,38 +237,13 @@ public:
     }
 
     /**
-     * Get all possible moves for the current player
-     * @param board The current state of the board
-     * @return A vector of Columns representing possible moves
-     */
-    vector<Column> getPossibleMoves(Connect4Board board)
-    {
-        // Check for possible moves in the current board state
-        vector<Column> validMoves;
-
-        for (int col = 0; col < COLS; ++col)
-        {
-            for (int row = ROWS - 1; row >= 0; --row)
-            {
-                if (board.getCell(row, col) == Player::EMPTY)
-                {
-                    validMoves.push_back(static_cast<Column>(col));
-                    break;
-                }
-            }
-        }
-
-        return validMoves;
-    }
-
-    /**
      * Count the pressure sum for each column
      * @param board The current state of the board
      * @param player The current player
      * @return A vector of pressure values for each column
      */
-    vector<int> countPressureSum(const Connect4Board &board,
-                                 Player player)
+    static vector<int> countPressureSum(const Connect4Board &board,
+                                        Player player)
     {
         Player opponent = board.getOponent(player);
 
@@ -382,7 +333,7 @@ public:
      * @param player The current player
      * @return A vector of win option counts for each column, returning -1 for full columns
      */
-    vector<int> countWinOptions(
+    static vector<int> countWinOptions(
         const Connect4Board &board,
         Player player)
     {
@@ -464,7 +415,7 @@ public:
      * @param player The current player
      * @return A vector of booleans indicating immediate threats for each column
      */
-    vector<bool> computeImmediateThreats(
+    static vector<bool> computeImmediateThreats(
         Connect4Board &board,
         Player player)
     {
@@ -497,7 +448,7 @@ public:
      * @param player The current player
      * @return A vector of booleans indicating minor threats for each column
      */
-    vector<bool> computeMinorThreats(
+    static vector<bool> computeMinorThreats(
         const Connect4Board &board,
         Player player)
     {
@@ -591,7 +542,7 @@ public:
      * @param player The current player
      * @return A vector of booleans indicating winning moves for each column
      */
-    vector<bool> computeWinningMoves(
+    static vector<bool> computeWinningMoves(
         Connect4Board board,
         Player player)
     {
@@ -644,86 +595,96 @@ public:
         return result;
     }
 
-    void generateTree(
-        Connect4Board &board,
-        Player player,
-        Player opponent,
-        int depth)
+    // Calculates the "pressure" for a single empty cell at (r_play, column)
+    // Returns -1 if (r_play,column) is off-board.
+    static int getTilePressure(const Connect4Board &board, Player player,
+                               int r_play, Column column)
     {
+        Player opponent = board.getOponent(player);
+        if (r_play < 0 || r_play >= ROWS || column < 0 || column >= COLS)
+            return -1;
+        int sum = 0;
+        // four directions: horizontal, vertical, diag1, diag2
+        const int dr[4] = {0, 1, 1, 1};
+        const int dc[4] = {1, 0, 1, -1};
+        for (int dir = 0; dir < 4; ++dir)
+        {
+            // forward direction
+            for (int step = 1; step < 4; ++step)
+            {
+                int rr = r_play + dr[dir] * step;
+                int cc = column + dc[dir] * step;
+                if (rr < 0 || rr >= ROWS || cc < 0 || cc >= COLS)
+                    break;
+                Player c = board.getCell(rr, cc);
+                // cout << "Checking cell (" << rr << ", " << cc << ") = " << static_cast<int>(c) << endl;
+                if (c == player)
+                {
+                    ++sum;
+                }
+                else if (c == opponent)
+                {
+                    break; // blocked by opponent
+                }
+                else
+                {
+                    // empty: ignore but continue scanning
+                    continue;
+                }
+            }
+            // backward direction
+            for (int step = 1; step < 4; ++step)
+            {
+                int rr = r_play - dr[dir] * step;
+                int cc = column - dc[dir] * step;
+                if (rr < 0 || rr >= ROWS || cc < 0 || cc >= COLS)
+                    break;
+                Player c = board.getCell(rr, cc);
+                // cout << "Checking cell (" << rr << ", " << cc << ") = " << static_cast<int>(c) << endl;
 
-        TreeNode *root = new TreeNode("Root");
-
-        Tree tree = Tree(root);
-
-        addLayer(board, player, opponent, depth, root);
-
-        tree.print();
-        tree.toDot("tree.dot");
-    }
-bool addLayer(
-    Connect4Board &board,
-    Player player,
-    Player opponent,
-    int depth,
-    TreeNode *parent)
-{
-    if (depth <= 0 || boardFull(board)) return true;
-
-    auto moves = getPossibleMoves(board);
-    std::vector<TreeNode*> children;
-
-    // First pass: generate children, but do not delete parent here
-    for (const Column &col : moves) {
-        // Skip full columns
-        if (board.findRow(col) < 0) continue;
-
-        Connect4Board copy = board;
-        copy.dropDisc(col, player);
-
-        // Check if opponent can win after this move in any column
-        bool allowsOpponentWin = false;
-        for (const Column &oppCol : getPossibleMoves(copy)) {
-            Connect4Board after = copy;
-            after.dropDisc(oppCol, opponent);
-            if (after.checkWin(opponent)) {
-                allowsOpponentWin = true;
-                break;
+                if (c == player)
+                {
+                    ++sum;
+                }
+                else if (c == opponent)
+                {
+                    break;
+                }
+                else
+                {
+                    continue;
+                }
             }
         }
-        if (allowsOpponentWin) continue;  // skip this move entirely
-
-        // Create child node
-        TreeNode *child = new TreeNode("Col " + std::to_string(col),
-                                       player == PLAYER1 ? 1 : 2);
-        if (copy.checkWin(player)) {
-            child->win = true;
-            child->label += " (win)";
-        }
-        children.push_back(child);
+        return sum;
     }
 
-    // If any winning child, prune siblings
-    bool anyWin = std::any_of(children.begin(), children.end(), [](TreeNode* c){ return c->win; });
-    if (anyWin) {
-        for (TreeNode *c : children) {
-            if (c->win)
-                parent->addChild(c);
-            else
-                delete c;
-        }
-        return true;
+    static TileMetrics generateMetricsForTile(
+        const Connect4Board &board, Player player, int r_play, Column column)
+    {
+        Player opponent = board.getOponent(player);
+        TileMetrics metrics;
+        metrics.pressure = getTilePressure(board, player, r_play, column);
+        if (metrics.pressure < 0)
+            return metrics; // off-board
+
+        // Check win options
+        metrics.winOptions = countWinOptions(board, player)[column];
+
+        // Check immediate threat
+        Connect4Board copy = board;
+        copy.setCell(r_play, column, opponent);
+        metrics.immediateThreat = copy.checkWin(opponent);
+
+        // Check minor threat
+        metrics.minorThreat = computeMinorThreats(board, player)[column];
+
+        // Check winning move
+        copy.setCell(r_play, column, player);
+        metrics.winningMove = copy.checkWin(player);
+
+        return metrics;
     }
-
-    // Attach and recurse
-    for (TreeNode *c : children) {
-        parent->addChild(c);
-        Connect4Board nextBoard = board;
-        nextBoard.dropDisc(static_cast<Column>(c->label.back() - '0'), player);
-        addLayer(nextBoard, opponent, player, depth - 1, c);
-    }
-
-    return true;
-}
-
 };
+
 #endif // GAMETHEORIE_H
