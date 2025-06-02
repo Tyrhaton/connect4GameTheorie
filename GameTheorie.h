@@ -53,13 +53,13 @@ public:
      * Default constructor for GameTheorie
      * Initializes the game theory with a default board and players
      */
-    GameTheorie(Connect4Board &board, Player player = Player::PLAYER1, Player opponent = Player::PLAYER2,
+    GameTheorie(Connect4Board &board, Player startingPlayer = Player::PLAYER1,
                 int depth = 2, Level level = Level::EASY)
-        : PLAYER(player), OPPONENT(opponent), level(level)
+        : PLAYER(startingPlayer), OPPONENT(board.getOponent(startingPlayer)), level(level)
     {
         (void)depth; // Unused parameter
         this->board = &board;
-        tree = new Tree(board, player, opponent, depth);
+        tree = new Tree(board, startingPlayer, depth);
         tree->toDot();
         tree->dotToSvg();
     }

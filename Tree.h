@@ -12,14 +12,14 @@ public:
     Column move;
     string label;
     int level;
-    int owner;
+    Player owner;
     bool win;
     TileMetrics metrics;
     int id;
     static int nextId;
     vector<TreeNode *> children;
 
-    TreeNode(Column move_, const string label_, int level_ = 0, int owner_ = 0, bool win_ = false, TileMetrics metrics_ = {0, 0, false, false, false})
+    TreeNode(Column move_, const string label_, int level_ = 0, Player owner_ = Player::EMPTY, bool win_ = false, TileMetrics metrics_ = {0, 0, false, false, false})
         : move(move_), label(label_), level(level_), owner(owner_), win(win_), metrics(metrics_), id(nextId++), children()
     {
     }
@@ -28,7 +28,9 @@ public:
     void addChild(TreeNode *child)
     {
         if (child)
+        {
             children.push_back(child);
+        }
     }
     // Print this node and its subtree with indentation
     void print(int depth = 0, bool root = false) const
@@ -43,7 +45,7 @@ public:
             for (int i = 0; i < depth; ++i)
                 cout << "  ";
             cout << "Node " << id << ": " << label
-                      << " W=" << (win ? "1" : "0") << " T=" << (metrics.immediateThreat ? "1" : "0") << " t=" << (metrics.minorThreat ? "1" : "0") << " p=" << metrics.pressure << " w=" << metrics.winOptions << endl;
+                 << " W=" << (win ? "1" : "0") << " T=" << (metrics.immediateThreat ? "1" : "0") << " t=" << (metrics.minorThreat ? "1" : "0") << " p=" << metrics.pressure << " w=" << metrics.winOptions << endl;
         }
         for (const auto *child : children)
         {
@@ -53,18 +55,18 @@ public:
 
     bool addLayer(
         Connect4Board &board,
-        Player player,
-        Player opponent,
         int depth,
         int currentLayer)
     {
+        Player player = board.getOponent(owner);
+        Player opponent = owner;
+
         if (depth <= 0 || board.full())
         {
             return true;
         }
 
         vector<Column> moves = board.getPossibleMoves();
-        // cout << moves.size() << " possible moves for player " << endl;
         children.clear();
 
         for (const Column &col : moves)
@@ -101,7 +103,7 @@ public:
                 col,
                 Connect4Board::colToChar(col),
                 currentLayer + 1,
-                (player == Player::PLAYER1 ? 1 : 2),
+                player,
                 copy.checkWin(player),
                 metrics);
 
@@ -130,57 +132,46 @@ public:
             }
         }
         // Recurse deeper
-        for (const Column &col : moves)
+        for (TreeNode *child : children)
         {
-            Connect4Board next = board;
-            next.dropDisc(col, player);
-            children[col]->addLayer(next, opponent, player, depth - 1, currentLayer + 1);
+            // Reconstruct the board state up to this child (drop child->move on a copy of board)
+            Connect4Board nextBoard = board;
+            nextBoard.dropDisc(child->move, player);
+            child->addLayer(
+                nextBoard,
+                depth - 1,
+                child->level);
         }
 
         return true;
     }
-    // void growLayer(
-    //     Connect4Board &board,
-    //     Player player,
-    //     Player opponent)
-    // {
-    //     if (children.empty())
-    //     {
-    //         // Reconstruct board state at this node (TODO)
-    //         // Then add one layer beneath
-    //         addLayer(board, player, opponent, 1);
-    //     }
-    //     else
-    //     {
-    //         // Descend to next level; swap players
-    //         for (TreeNode *child : children)
-    //         {
-    //             // Make a local copy of board state for this path (TODO)
-    //             child->growLayer(board, opponent, player);
-    //         }
-    //     }
-    // }
     void growNode(
         Connect4Board &board,
-        Player player,
-        Player opponent,
         int levels,
         int currentLevel)
     {
         if (children.empty())
         {
-            // This is a deepest leaf: grow levels layers here
-            addLayer(board, player, opponent, levels, currentLevel);
+            // At a leaf: just expand "levels" deeper layers here,
+            // with "owner" to move and "currentLevel" as this node’s depth
+            addLayer(board, levels, currentLevel);
         }
         else
         {
-            // Not a leaf: for each child, reconstruct its board state and recurse
+            // Not a leaf: for each existing child, reconstruct THAT child's board
             for (TreeNode *child : children)
             {
-                // TODO: reconstruct board state up to this child
-                Connect4Board childBoard = board; // replace with actual state
-                // Apply moves down the path to `child` to get childBoard
-                child->growNode(childBoard, opponent, player, levels, currentLevel);
+                // 1) Copy this node's board, then drop the move that made "child"
+                Connect4Board childBoard = board;
+                childBoard.dropDisc(child->move, owner);
+
+                // 2) Recurse with owners swapped. Pass child's level so that
+                //    "addLayer" inside that recursion knows the true parent level.
+                child->growNode(
+                    childBoard,
+                    levels,
+                    child->level // propagate the child's actual depth
+                );
             }
         }
     }
@@ -245,14 +236,13 @@ public:
     int layers = 0;
 
     Tree(Connect4Board &board,
-         Player player,
-         Player opponent,
+         Player startingPlayer,
          int depth)
     {
 
-        root = new TreeNode(Column::A, "Root", 0);
+        root = new TreeNode(Column::A, "Root", 0, board.getOponent(startingPlayer), false);
 
-        root->addLayer(board, player, opponent, depth, 0);
+        root->addLayer(board, depth, 0);
 
         toDot("tree.dot");
     }
@@ -288,10 +278,10 @@ public:
         string color;
         switch (n->owner)
         {
-        case 1:
+        case Player::PLAYER1:
             color = "lightblue";
             break;
-        case 2:
+        case Player::PLAYER2:
             color = "lightcoral";
             break;
         default:
@@ -466,12 +456,10 @@ public:
         pruneToBest(root, isPlayerTurn);
     }
 
-    void grow(Connect4Board &initialBoard,
-              Player player,
-              Player opponent,
+    void grow(Connect4Board &currentBoard,
               int levels = 1)
     {
-        root->growNode(initialBoard, player, opponent, levels, layers);
+        root->growNode(currentBoard, levels, layers);
         layers++;
     }
     void setRoot(TreeNode *newRoot)

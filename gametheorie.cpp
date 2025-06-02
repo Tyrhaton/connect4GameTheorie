@@ -11,11 +11,14 @@ int main()
     // initBoard.dropDisc(Column::B, Player::PLAYER1);
     // initBoard.dropDisc(Column::B, Player::PLAYER1);
 
-    Player player = Player::PLAYER1;
-    Player opponent = initBoard.getOponent(player);
+    Player startingPlayer = Player::PLAYER1; // PLAYER1 (user) or PLAYER2 (system)
+    Player opponentPlayer = initBoard.getOponent(startingPlayer);
+
+    // Player player = Player::PLAYER1;
+    // Player opponent = initBoard.getOponent(player);
     GameTheorie::Level level = GameTheorie::Level::EASY;
 
-    GameTheorie brain = GameTheorie(initBoard, player, opponent, 2, level);
+    GameTheorie brain = GameTheorie(initBoard, startingPlayer, 3, level);
     Connect4Board board = brain.getBoard(); // Use the initial board state
     // board.dropDisc(Column::D, Player::PLAYER1);
     Tree *tree = brain.tree;
@@ -51,9 +54,9 @@ int main()
         // player 1
 
         Column col = Connect4Board::charToColumn(move[0]);
-        bool player1Won = board.dropDisc(col, player);
+        bool player1Won = board.dropDisc(col, startingPlayer);
         tree->moveRootUp(col);
-        tree->grow(board, player, opponent, 1);
+        tree->grow(board, 1);
         tree->toDot();
         tree->dotToSvg();
 
@@ -65,12 +68,13 @@ int main()
         }
 
         // player 2
-        Column bestMove = brain.getBestMove(board, opponent, level, debug);
+        Column bestMove = brain.getBestMove(board, opponentPlayer, level, debug);
         // Column bestMove = brain.getBestMoveV2();
-        brain.getBestMoveV2();
-        bool player2Won = board.dropDisc(bestMove, opponent);
+        Column test = brain.getBestMoveV2();
+        cout << "Best move for player 2: " << Connect4Board::colToChar(test) << endl;
+        bool player2Won = board.dropDisc(test, opponentPlayer);
         tree->moveRootUp(bestMove);
-        tree->grow(board, opponent, player, 1);
+        tree->grow(board, 1);
         tree->toDot();
         tree->dotToSvg();
 
