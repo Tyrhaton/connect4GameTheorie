@@ -76,7 +76,7 @@ public:
         case 'G':
             return Column::G;
         default:
-            throw std::invalid_argument("Invalid column character");
+            throw invalid_argument("Invalid column character");
         }
     }
 
@@ -90,21 +90,21 @@ public:
         switch (column)
         {
         case Column::A:
-            return std::string(1, 'A');
+            return string(1, 'A');
         case Column::B:
-            return std::string(1, 'B');
+            return string(1, 'B');
         case Column::C:
-            return std::string(1, 'C');
+            return string(1, 'C');
         case Column::D:
-            return std::string(1, 'D');
+            return string(1, 'D');
         case Column::E:
-            return std::string(1, 'E');
+            return string(1, 'E');
         case Column::F:
-            return std::string(1, 'F');
+            return string(1, 'F');
         case Column::G:
-            return std::string(1, 'G');
+            return string(1, 'G');
         default:
-            throw std::invalid_argument("Invalid column");
+            throw invalid_argument("Invalid column");
         }
     }
 
@@ -181,7 +181,8 @@ public:
     {
         if (column < 0 || column >= COLS)
         {
-            throw out_of_range("Column index out of range");
+            // cout << "Invalid column. Please choose a column between A and G. selected column:" << column << endl;
+            throw out_of_range("Column index out of range (" + colToChar(column) + ")");
         }
         int row = findRow(column);
         if (row < 0)
@@ -202,7 +203,9 @@ public:
     Player getCell(int row, int col) const
     {
         if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
+        {
             throw out_of_range("Row or column index out of range");
+        }
         return grid[row][col];
     }
 

@@ -10,19 +10,18 @@ class TreeNode
 {
 public:
     Column move;
-    std::string label;
+    string label;
+    int level;
     int owner;
     bool win;
     TileMetrics metrics;
     int id;
     static int nextId;
-    std::string color;
-    std::vector<TreeNode *> children;
+    vector<TreeNode *> children;
 
-    TreeNode(Column move_, const std::string label_, int owner_ = 0, bool win_ = false, TileMetrics metrics_ = {0, 0, false, false, false})
-        : move(move_), label(label_), owner(owner_), win(win_), metrics(metrics_), id(nextId++), color(), children()
+    TreeNode(Column move_, const string label_, int level_ = 0, int owner_ = 0, bool win_ = false, TileMetrics metrics_ = {0, 0, false, false, false})
+        : move(move_), label(label_), level(level_), owner(owner_), win(win_), metrics(metrics_), id(nextId++), children()
     {
-        // Set color based on owner
     }
 
     // Add an existing TreeNode as child
@@ -36,15 +35,15 @@ public:
     {
         if (root)
         {
-            std::cout << "Root Node: " << label << std::endl;
+            cout << "Root Node: " << label << endl;
         }
         else
         {
 
             for (int i = 0; i < depth; ++i)
-                std::cout << "  ";
-            std::cout << "Node " << id << ": " << label
-                      << " W=" << (win ? "1" : "0") << " T=" << (metrics.immediateThreat ? "1" : "0") << " t=" << (metrics.minorThreat ? "1" : "0") << " p=" << metrics.pressure << " w=" << metrics.winOptions << std::endl;
+                cout << "  ";
+            cout << "Node " << id << ": " << label
+                      << " W=" << (win ? "1" : "0") << " T=" << (metrics.immediateThreat ? "1" : "0") << " t=" << (metrics.minorThreat ? "1" : "0") << " p=" << metrics.pressure << " w=" << metrics.winOptions << endl;
         }
         for (const auto *child : children)
         {
@@ -56,7 +55,8 @@ public:
         Connect4Board &board,
         Player player,
         Player opponent,
-        int depth)
+        int depth,
+        int currentLayer)
     {
         if (depth <= 0 || board.full())
         {
@@ -100,6 +100,7 @@ public:
             TreeNode *child = new TreeNode(
                 col,
                 Connect4Board::colToChar(col),
+                currentLayer + 1,
                 (player == Player::PLAYER1 ? 1 : 2),
                 copy.checkWin(player),
                 metrics);
@@ -133,42 +134,43 @@ public:
         {
             Connect4Board next = board;
             next.dropDisc(col, player);
-            children[col]->addLayer(next, opponent, player, depth - 1);
+            children[col]->addLayer(next, opponent, player, depth - 1, currentLayer + 1);
         }
 
         return true;
     }
-    void growLayer(
-        Connect4Board &board,
-        Player player,
-        Player opponent)
-    {
-        if (children.empty())
-        {
-            // Reconstruct board state at this node (TODO)
-            // Then add one layer beneath
-            addLayer(board, player, opponent, 1);
-        }
-        else
-        {
-            // Descend to next level; swap players
-            for (TreeNode *child : children)
-            {
-                // Make a local copy of board state for this path (TODO)
-                child->growLayer(board, opponent, player);
-            }
-        }
-    }
+    // void growLayer(
+    //     Connect4Board &board,
+    //     Player player,
+    //     Player opponent)
+    // {
+    //     if (children.empty())
+    //     {
+    //         // Reconstruct board state at this node (TODO)
+    //         // Then add one layer beneath
+    //         addLayer(board, player, opponent, 1);
+    //     }
+    //     else
+    //     {
+    //         // Descend to next level; swap players
+    //         for (TreeNode *child : children)
+    //         {
+    //             // Make a local copy of board state for this path (TODO)
+    //             child->growLayer(board, opponent, player);
+    //         }
+    //     }
+    // }
     void growNode(
         Connect4Board &board,
         Player player,
         Player opponent,
-        int levels)
+        int levels,
+        int currentLevel)
     {
         if (children.empty())
         {
             // This is a deepest leaf: grow levels layers here
-            addLayer(board, player, opponent, levels);
+            addLayer(board, player, opponent, levels, currentLevel);
         }
         else
         {
@@ -178,14 +180,14 @@ public:
                 // TODO: reconstruct board state up to this child
                 Connect4Board childBoard = board; // replace with actual state
                 // Apply moves down the path to `child` to get childBoard
-                child->growNode(childBoard, opponent, player, levels);
+                child->growNode(childBoard, opponent, player, levels, currentLevel);
             }
         }
     }
 
     bool removeChild(TreeNode *child)
     {
-        auto it = std::find(children.begin(), children.end(), child);
+        auto it = find(children.begin(), children.end(), child);
         if (it != children.end())
         {
             children.erase(it);
@@ -196,7 +198,7 @@ public:
 
     void removeAllBranchesExcept(Column col)
     {
-        cout << children.size() << " children before pruning branches except " << Connect4Board::colToChar(col) << endl;
+        cout << children.size() << " children before removing branches except " << Connect4Board::colToChar(col) << endl;
         for (TreeNode *it : children)
         {
             if (it->move != col)
@@ -240,6 +242,7 @@ class Tree
 {
 public:
     TreeNode *root;
+    int layers = 0;
 
     Tree(Connect4Board &board,
          Player player,
@@ -247,9 +250,9 @@ public:
          int depth)
     {
 
-        root = new TreeNode(Column::A, "Root");
+        root = new TreeNode(Column::A, "Root", 0);
 
-        root->addLayer(board, player, opponent, depth);
+        root->addLayer(board, player, opponent, depth, 0);
 
         toDot("tree.dot");
     }
@@ -263,7 +266,7 @@ public:
     }
 
     // Export tree to Graphviz DOT file with node colors
-    void toDot(const std::string &filename = "tree.dot") const
+    void toDot(const string &filename = "tree.dot") const
     {
         ofstream ofs(filename);
         ofs << "digraph G {\n"
@@ -298,28 +301,40 @@ public:
         string ofs = "";
         if (root)
         {
-            ofs += "  node" + std::to_string(n->id) + " [label=\"Root\", fillcolor=\"lightgrey\"];\n";
+            ofs += "  node" + to_string(n->id) + " [label=\"Root\", fillcolor=\"lightgrey\"];\n";
         }
         else
         {
-            ofs += "  node" + std::to_string(n->id) + " [label=\"" + n->label +
+            ofs += "  node" + to_string(n->id) + " [label=\"" + to_string(n->level) + ") " + n->label +
                    " W=" + (n->win ? "1" : "0") +
                    " T=" + (n->metrics.immediateThreat ? "1" : "0") +
                    " t=" + (n->metrics.minorThreat ? "1" : "0") +
-                   " p=" + std::to_string(n->metrics.pressure) +
-                   " w=" + std::to_string(n->metrics.winOptions) +
+                   " p=" + to_string(n->metrics.pressure) +
+                   " w=" + to_string(n->metrics.winOptions) +
                    "\", fillcolor=\"" + color + "\"];\n";
         }
         // Edges and recurse
         for (const TreeNode *c : n->children)
         {
-            ofs += "  node" + std::to_string(n->id) + " -> node" + std::to_string(c->id) + ";\n";
+            ofs += "  node" + to_string(n->id) + " -> node" + to_string(c->id) + ";\n";
             string dfsChild = dfs(c, false);
             ofs += dfsChild;
         }
 
         return ofs;
     };
+
+    // Recursive helper to emit edges (parent -> child)
+    void emitEdges(const TreeNode *node, ofstream &ofs) const
+    {
+        if (!node)
+            return;
+        for (const TreeNode *c : node->children)
+        {
+            ofs << "  node" << node->id << " -> node" << c->id << ";\n";
+            emitEdges(c, ofs);
+        }
+    }
 
     void dotToSvg(const string &dotFile = "tree.dot", const string &svgFile = "tree.svg") const
     {
@@ -456,7 +471,8 @@ public:
               Player opponent,
               int levels = 1)
     {
-        root->growNode(initialBoard, player, opponent, levels);
+        root->growNode(initialBoard, player, opponent, levels, layers);
+        layers++;
     }
     void setRoot(TreeNode *newRoot)
     {

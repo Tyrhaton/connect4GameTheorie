@@ -18,6 +18,7 @@ int main()
     GameTheorie brain = GameTheorie(initBoard, player, opponent, 2, level);
     Connect4Board board = brain.getBoard(); // Use the initial board state
     // board.dropDisc(Column::D, Player::PLAYER1);
+    Tree *tree = brain.tree;
 
     board.print();
     // int best = brain.getBestMoveWithVisualization(board, player, opponent, 3, "tree.dot");
@@ -40,8 +41,6 @@ int main()
     while (run)
     {
 
-        brain.getBestMoveV2(player);
-
         cout << "Enter your move (A-G) or 'exit' to quit: " << endl;
         getline(cin, move);
         if (move == "exit" || move == "Exit" || move == "quit" || move == "q")
@@ -53,6 +52,11 @@ int main()
 
         Column col = Connect4Board::charToColumn(move[0]);
         bool player1Won = board.dropDisc(col, player);
+        tree->moveRootUp(col);
+        tree->grow(board, player, opponent, 1);
+        tree->toDot();
+        tree->dotToSvg();
+
         board.print();
         if (player1Won)
         {
@@ -62,7 +66,14 @@ int main()
 
         // player 2
         Column bestMove = brain.getBestMove(board, opponent, level, debug);
+        // Column bestMove = brain.getBestMoveV2();
+        brain.getBestMoveV2();
         bool player2Won = board.dropDisc(bestMove, opponent);
+        tree->moveRootUp(bestMove);
+        tree->grow(board, opponent, player, 1);
+        tree->toDot();
+        tree->dotToSvg();
+
         board.print();
         if (player2Won)
         {

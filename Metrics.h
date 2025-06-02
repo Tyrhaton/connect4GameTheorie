@@ -28,7 +28,7 @@ public:
      * @param player The current player
      * @return A vector of pressure values for each column
      */
-    static vector<int> countPressureSum(const Connect4Board &board,
+    static vector<int> countPressureSum(Connect4Board &board,
                                         Player player)
     {
         Player opponent = board.getOponent(player);
@@ -37,25 +37,14 @@ public:
 
         for (int column = 0; column < board.COLS; ++column)
         {
-            // 1) Vind speelbare tegel (laagste lege rij) in kolom c
-            int r_play = -1;
-            for (int row = board.ROWS - 1; row >= 0; --row)
-            {
-                if (board.getCell(row, column) == Player::EMPTY)
-                {
-                    r_play = row;
-                    break;
-                }
-            }
+            int r_play = board.findRow(column);
             if (r_play < 0)
             {
-                // kolom vol
                 pressure[column] = -1;
                 continue;
             }
 
             int sumTiles = 0;
-            // 2) ga over alle 4-op-een-rij vensters in 4 richtingen
             for (int dir = 0; dir < 4; ++dir)
             {
                 for (int off = 0; off < 4; ++off)
@@ -63,7 +52,6 @@ public:
                     int sr = r_play - dr4[dir] * off;
                     int sc = column - dc4[dir] * off;
 
-                    // a) Check window binnen bord en vrij van opponent
                     bool ok = true;
                     for (int i = 0; i < 4; ++i)
                     {
@@ -80,7 +68,6 @@ public:
                     if (!ok)
                         continue;
 
-                    // b) Check dat de speelbare tegel erin zit
                     bool covers = false;
                     for (int i = 0; i < 4; ++i)
                     {
@@ -93,14 +80,15 @@ public:
                     if (!covers)
                         continue;
 
-                    // c) Tel hoeveel eigen schijven de speler al heeft in dit window (excl. G zelf)
                     int ownCount = 0;
                     for (int i = 0; i < 4; ++i)
                     {
                         int rr = sr + dr4[dir] * i;
                         int cc = sc + dc4[dir] * i;
                         if (rr == r_play && cc == column)
-                            continue; // niet G zelf
+                        {
+                            continue;
+                        }
                         if (board.getCell(rr, cc) == player)
                             ++ownCount;
                     }
@@ -120,7 +108,7 @@ public:
      * @return A vector of win option counts for each column, returning -1 for full columns
      */
     static vector<int> countWinOptions(
-        const Connect4Board &board,
+        Connect4Board &board,
         Player player)
     {
         Player opponent = board.getOponent(player);
@@ -129,34 +117,21 @@ public:
 
         for (int column = 0; column < board.COLS; ++column)
         {
-            // 1) vind de speelbare tegel in kolom c (eerste lege van onder)
-            int r_play = -1;
-            for (int row = board.ROWS - 1; row >= 0; --row)
-            {
-                if (board.getCell(row, column) == Player::EMPTY)
-                {
-                    r_play = row;
-                    break;
-                }
-            }
+            int r_play = board.findRow(column);
             if (r_play < 0)
             {
-                // kolom is vol
                 result[column] = -1;
                 continue;
             }
 
             int count = 0;
-            // 2) scan alle 4‐lange vensters in 4 richtingen
             for (int dir = 0; dir < 4; ++dir)
             {
                 for (int off = 0; off < 4; ++off)
                 {
-                    // schuif het raam zo dat (r_play,c) op positie 'off' ligt
                     int sr = r_play - dr4[dir] * off;
                     int sc = column - dc4[dir] * off;
 
-                    // a) check of raam binnen bord en geen tegenstander
                     bool valid = true;
                     for (int k = 0; k < 4; ++k)
                     {
@@ -171,7 +146,6 @@ public:
                     if (!valid)
                         continue;
 
-                    // b) check dat (r_play,c) er echt in zit
                     bool covers = false;
                     for (int k = 0; k < 4; ++k)
                     {
@@ -184,7 +158,6 @@ public:
                     if (!covers)
                         continue;
 
-                    // c) dit raam telt als één win‐optie
                     ++count;
                 }
             }
@@ -235,7 +208,7 @@ public:
      * @return A vector of booleans indicating minor threats for each column
      */
     static vector<bool> computeMinorThreats(
-        const Connect4Board &board,
+        Connect4Board &board,
         Player player)
     {
         Player opponent = board.getOponent(player);
@@ -244,15 +217,7 @@ public:
 
         for (int column = 0; column < board.COLS; column++)
         {
-            int r_play = -1;
-            for (int row = board.ROWS - 1; row >= 0; row--)
-            {
-                if (board.getCell(row, column) == Player::EMPTY)
-                {
-                    r_play = row;
-                    break;
-                }
-            }
+            int r_play = board.findRow(column);
             if (r_play < 0)
                 continue;
 
@@ -336,15 +301,7 @@ public:
 
         for (int column = 0; column < board.COLS; column++)
         {
-            int r_play = -1;
-            for (int row = board.ROWS - 1; row >= 0; row--)
-            {
-                if (board.getCell(row, column) == Player::EMPTY)
-                {
-                    r_play = row;
-                    break;
-                }
-            }
+            int r_play = board.findRow(column);
             if (r_play < 0)
             {
                 result[column] = false;
@@ -394,7 +351,9 @@ public:
     {
         Player opponent = board.getOponent(player);
         if (r_play < 0 || r_play >= board.ROWS || column < 0 || column >= board.COLS)
+        {
             return -1;
+        }
         int sum = 0;
 
         for (int dir = 0; dir < 4; ++dir)
@@ -543,7 +502,6 @@ public:
         return copy.checkWin(opponent);
     }
 
-
     /**
      * Check if the given tile is a minor threat for the opponent
      * @param board The current state of the board
@@ -558,23 +516,15 @@ public:
                                    int column)
     {
         Player opponent = board.getOponent(player);
-        // Check row/column bounds and that the target cell is empty:
-        if (r_play < 0 || r_play >= board.ROWS ||
-            column < 0 || column >= board.COLS ||
+        if (!board.inBoard(r_play, column) ||
             board.getCell(r_play, column) != Player::EMPTY)
         {
             return false;
         }
 
-        // Four directions for 4‐in‐a‐row windows
-        // const int dr4[4] = {0, 1, 1, 1};
-        // const int dc4[4] = {1, 0, 1, -1};
-
         bool isMinor = false;
-        // Scan each direction
         for (int dir = 0; dir < 4 && !isMinor; ++dir)
         {
-            // Slide the 4‐cell window so (r_play,column) is at offset 'off'
             for (int off = 0; off < 4 && !isMinor; ++off)
             {
                 int sr = r_play - dr4[dir] * off;
@@ -582,7 +532,6 @@ public:
 
                 int countOp = 0, countEmp = 0, countMe = 0;
                 bool covers = false;
-                // Check the 4 cells in this window
                 for (int k = 0; k < 4; ++k)
                 {
                     int rr = sr + dr4[dir] * k;
@@ -607,7 +556,7 @@ public:
                         ++countOp;
                     }
                     else
-                    { // cell == player
+                    {
                         ++countMe;
                     }
                 }
@@ -622,9 +571,6 @@ public:
             return false;
         }
 
-        // Check 8‐neighbor adjacency for at least one opponent disc
-        // const int dr8[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
-        // const int dc8[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
         for (int k = 0; k < 8; ++k)
         {
             int rr = r_play + dr8[k];
@@ -639,15 +585,12 @@ public:
 
     static bool getTileWinningMove(const Connect4Board &board, Player player, int r_play, Column column)
     {
-        // Check that (r_play, column) is within bounds and actually empty:
-        if (r_play < 0 || r_play >= board.ROWS ||
-            column < 0 || column >= board.COLS ||
+        if (!board.inBoard(r_play, column) ||
             board.getCell(r_play, column) != Player::EMPTY)
         {
             return false;
         }
 
-        // Check for winning move
         Connect4Board copy = board;
         copy.setCell(r_play, column, player);
         return copy.checkWin(player);
@@ -662,9 +605,8 @@ public:
      * @return A TileMetrics object containing various metrics for the tile
      */
     static TileMetrics generateMetricsForTile(
-        const Connect4Board &board, Player player, int r_play, Column column)
+        Connect4Board &board, Player player, int r_play, Column column)
     {
-        // Player opponent = board.getOponent(player);
         TileMetrics metrics;
         metrics.pressure = getTilePressure(board, player, r_play, column);
         if (metrics.pressure < 0)
@@ -675,10 +617,9 @@ public:
         // Check win options
         // metrics.winOptions = countWinOptions(board, player)[column];
         metrics.winOptions = getTileWinOptions(board, player, r_play, column);
+        // cout << "Win options for column " << Connect4Board::colToChar(column) << ": " << metrics.winOptions << ":" << countWinOptions(board, player)[column] << endl;
 
         // Check immediate threat
-        // Connect4Board copy = board;
-        // copy.setCell(r_play, column, opponent);
         // metrics.immediateThreat = copy.checkWin(opponent);
         metrics.immediateThreat = getTileThreat(board, player, r_play, column);
 
@@ -687,8 +628,6 @@ public:
         metrics.minorThreat = getTileMinorThreat(board, player, r_play, column);
 
         // Check winning move
-        // copy.setCell(r_play, column, player);
-        // metrics.winningMove = copy.checkWin(player);
         metrics.winningMove = getTileWinningMove(board, player, r_play, column);
 
         return metrics;

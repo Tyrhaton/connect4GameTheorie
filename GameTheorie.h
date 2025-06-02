@@ -201,7 +201,7 @@ public:
         return bestMove;
     }
 
-    Column getBestMoveV2(Player player)
+    Column getBestMoveV2()
     {
         if (!tree)
         {
@@ -221,7 +221,11 @@ public:
 
         Tree copy = *tree;
         // Prune the tree to the best move for the current player
-        copy.prune(player == PLAYER);
+        // copy.prune(player == PLAYER);
+
+        int bestPressure = -1;
+        int bestWinOptions = -1;
+        Column bestMove = copy.root->children.front()->move;
 
         for (auto child : copy.root->children)
         {
@@ -231,15 +235,51 @@ public:
             //     // return child->move;
             // }
             cout << "Child: " << child->label
-                 << " Owner: " << child->owner
-                 << " Win: " << (child->win ? "Yes" : "No")
-                 << " Pressure: " << child->metrics.pressure
+                 << " Owner: " << (child->owner == 1 ? "Player 1" : "Player 2")
+                 << " Win: " << (child->win ? "True" : "False")
+                 << " Threat: " << (child->metrics.immediateThreat ? "True" : "False")
+                 << " Minor Threat: " << (child->metrics.minorThreat ? "True" : "False")
                  << " Win Options: " << child->metrics.winOptions
+                 << " Pressure: " << child->metrics.pressure
                  << endl;
+
+            if (child->win)
+            {
+                // If the child node is a winning move, return it
+                return child->move;
+            }
+            if (child->metrics.immediateThreat)
+            {
+                // If the child node has an immediate threat, return it
+                return child->move;
+            }
+            if (child->metrics.minorThreat)
+            {
+                // If the child node has a minor threat, return it
+                return child->move;
+            }
+
+            int p = child->metrics.winOptions;
+            if (p > bestWinOptions)
+            {
+                bestWinOptions = p;
+                bestPressure = child->metrics.pressure;
+                bestMove = child->move;
+            }
+            else if (p == bestWinOptions)
+            {
+                // check pressure
+                if (child->metrics.pressure > bestPressure)
+                {
+                    bestPressure = child->metrics.pressure;
+                    bestMove = child->move;
+                }
+            }
         }
 
         // Return the best move from the root node
         // return root->getBestMove();
+        return bestMove;
     }
 
     /**
