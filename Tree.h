@@ -17,10 +17,11 @@ public:
     TileMetrics metrics;
     int id;
     static int nextId;
+    int row;
     vector<TreeNode *> children;
 
-    TreeNode(Column move_, const string label_, int level_ = 0, Player owner_ = Player::EMPTY, bool win_ = false, TileMetrics metrics_ = {0, 0, false, false, false})
-        : move(move_), label(label_), level(level_), owner(owner_), win(win_), metrics(metrics_), id(nextId++), children()
+    TreeNode(Column move_, const string label_, int level_ = 0, Player owner_ = Player::EMPTY, bool win_ = false, TileMetrics metrics_ = {0, 0, false, false, false}, int row_ = -1)
+        : move(move_), label(label_), level(level_), owner(owner_), win(win_), metrics(metrics_), id(nextId++), row(row_), children()
     {
     }
 
@@ -69,6 +70,9 @@ public:
         vector<Column> moves = board.getPossibleMoves();
         children.clear();
 
+        // Prune non-winning siblings if any win exists
+        bool hasWin = false;
+
         for (const Column &col : moves)
         {
             if (board.findRow(col) < 0)
@@ -99,25 +103,33 @@ public:
                 continue;
             }
 
+            // cout << to_string(board.ROWS - row) << " " << Connect4Board::colToChar(col) << " " << player << " " << metrics.pressure << " " << metrics.winOptions << endl;
             TreeNode *child = new TreeNode(
                 col,
                 Connect4Board::colToChar(col),
                 currentLayer + 1,
                 player,
                 copy.checkWin(player),
-                metrics);
+                metrics,
+                board.ROWS - row);
 
             addChild(child);
-        }
 
-        // Prune non-winning siblings if any win exists
-        bool hasWin = false;
-        for (auto *c : children)
-            if (c->win)
+            if (child->win)
             {
                 hasWin = true;
                 break;
             }
+        }
+
+        // for (auto *c : children)
+        // {
+        //     if (c->win)
+        //     {
+        //         hasWin = true;
+        //         break;
+        //     }
+        // }
         if (hasWin)
         {
             for (auto it = children.begin(); it != children.end();)
@@ -128,7 +140,9 @@ public:
                     it = children.erase(it);
                 }
                 else
+                {
                     ++it;
+                }
             }
         }
         // Recurse deeper
@@ -295,7 +309,7 @@ public:
         }
         else
         {
-            ofs += "  node" + to_string(n->id) + " [label=\"" + to_string(n->level) + ") " + n->label +
+            ofs += "  node" + to_string(n->id) + " [label=\"" + to_string(n->level) + ") " + Connect4Board::colToChar(n->move) + to_string(n->row) +
                    " W=" + (n->win ? "1" : "0") +
                    " T=" + (n->metrics.immediateThreat ? "1" : "0") +
                    " t=" + (n->metrics.minorThreat ? "1" : "0") +
@@ -473,6 +487,18 @@ public:
 
         TreeNode *child = root->children[0];
         setRoot(child);
+    }
+
+    void updateTree(Connect4Board &board, Column column)
+    {
+        if (!root)
+        {
+            throw runtime_error("Tree root is not initialized.");
+        }
+        moveRootUp(column);
+        grow(board, 1);
+        toDot();
+        dotToSvg();
     }
 };
 

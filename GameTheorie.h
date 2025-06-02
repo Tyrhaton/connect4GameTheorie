@@ -234,14 +234,14 @@ public:
             //     // Return the first child that matches the player's owner
             //     // return child->move;
             // }
-            cout << "Child: " << child->label
-                 << " Owner: " << (child->owner == 1 ? "Player 1" : "Player 2")
-                 << " Win: " << (child->win ? "True" : "False")
-                 << " Threat: " << (child->metrics.immediateThreat ? "True" : "False")
-                 << " Minor Threat: " << (child->metrics.minorThreat ? "True" : "False")
-                 << " Win Options: " << child->metrics.winOptions
-                 << " Pressure: " << child->metrics.pressure
-                 << endl;
+            // cout << "Child: " << Connect4Board::colToChar(child->move) << to_string(child->row)
+            //      << " Owner: " << (child->owner == 1 ? "Player 1" : "Player 2")
+            //      << " Win: " << (child->win ? "True" : "False")
+            //      << " Threat: " << (child->metrics.immediateThreat ? "True" : "False")
+            //      << " Minor Threat: " << (child->metrics.minorThreat ? "True" : "False")
+            //      << " Win Options: " << child->metrics.winOptions
+            //      << " Pressure: " << child->metrics.pressure
+            //      << endl;
 
             if (child->win)
             {
