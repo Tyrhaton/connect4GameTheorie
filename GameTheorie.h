@@ -236,14 +236,14 @@ public:
             // }
             // cout << "Child: " << Connect4Board::colToChar(child->move) << to_string(child->row)
             //      << " Owner: " << (child->owner == 1 ? "Player 1" : "Player 2")
-            //      << " Win: " << (child->win ? "True" : "False")
+            //      << " Win: " << (child->metrics.winningMove ? "True" : "False")
             //      << " Threat: " << (child->metrics.immediateThreat ? "True" : "False")
             //      << " Minor Threat: " << (child->metrics.minorThreat ? "True" : "False")
             //      << " Win Options: " << child->metrics.winOptions
             //      << " Pressure: " << child->metrics.pressure
             //      << endl;
 
-            if (child->win)
+            if (child->metrics.winningMove)
             {
                 // If the child node is a winning move, return it
                 return child->move;

@@ -350,7 +350,8 @@ public:
                                int r_play, Column column)
     {
         Player opponent = board.getOponent(player);
-        if (r_play < 0 || r_play >= board.ROWS || column < 0 || column >= board.COLS)
+        if (board.inBoard(r_play, column) ||
+            board.getCell(r_play, column) != Player::EMPTY)
         {
             return -1;
         }
@@ -358,7 +359,6 @@ public:
 
         for (int dir = 0; dir < 4; ++dir)
         {
-            // forward direction
             for (int step = 1; step < 4; ++step)
             {
                 int rr = r_play + dr4[dir] * step;
@@ -366,22 +366,19 @@ public:
                 if (rr < 0 || rr >= board.ROWS || cc < 0 || cc >= board.COLS)
                     break;
                 Player c = board.getCell(rr, cc);
-                // cout << "Checking cell (" << rr << ", " << cc << ") = " << static_cast<int>(c) << endl;
                 if (c == player)
                 {
                     ++sum;
                 }
                 else if (c == opponent)
                 {
-                    break; // blocked by opponent
+                    break;
                 }
                 else
                 {
-                    // empty: ignore but continue scanning
                     continue;
                 }
             }
-            // backward direction
             for (int step = 1; step < 4; ++step)
             {
                 int rr = r_play - dr4[dir] * step;
@@ -389,7 +386,6 @@ public:
                 if (rr < 0 || rr >= board.ROWS || cc < 0 || cc >= board.COLS)
                     break;
                 Player c = board.getCell(rr, cc);
-                // cout << "Checking cell (" << rr << ", " << cc << ") = " << static_cast<int>(c) << endl;
 
                 if (c == player)
                 {
@@ -422,9 +418,7 @@ public:
                                  int column)
     {
         Player opponent = board.getOponent(player);
-        // Check that (r_play, column) is within bounds and actually empty:
-        if (r_play < 0 || r_play >= board.ROWS ||
-            column < 0 || column >= board.COLS ||
+        if (board.inBoard(r_play, column) ||
             board.getCell(r_play, column) != Player::EMPTY)
         {
             return -1;
@@ -583,6 +577,14 @@ public:
         return false;
     }
 
+    /**
+     * Check if the given tile is a winning move for the player
+     * @param board The current state of the board
+     * @param player The current player
+     * @param r_play The row index of the tile to analyze
+     * @param column The column index of the tile to analyze
+     * @return True if the tile is a winning move, false otherwise
+     */
     static bool getTileWinningMove(const Connect4Board &board, Player player, int r_play, Column column)
     {
         if (!board.inBoard(r_play, column) ||
@@ -607,27 +609,21 @@ public:
     static TileMetrics generateMetricsForTile(
         Connect4Board &board, Player player, int r_play, Column column)
     {
-        TileMetrics metrics;
+        TileMetrics metrics = {-1, -1, false, false, false};
+
+        // Get the pressure for the tile
         metrics.pressure = getTilePressure(board, player, r_play, column);
-        if (metrics.pressure < 0)
-        {
-            return metrics;
-        }
 
-        // Check win options
-        // metrics.winOptions = countWinOptions(board, player)[column];
+        // Get the win options for the tile
         metrics.winOptions = getTileWinOptions(board, player, r_play, column);
-        // cout << "Win options for column " << Connect4Board::colToChar(column) << ": " << metrics.winOptions << ":" << countWinOptions(board, player)[column] << endl;
 
-        // Check immediate threat
-        // metrics.immediateThreat = copy.checkWin(opponent);
+        // Get the immediate threat for the tile
         metrics.immediateThreat = getTileThreat(board, player, r_play, column);
 
-        // Check minor threat
-        // metrics.minorThreat = computeMinorThreats(board, player)[column];
+        // Get the minor threat for the tile
         metrics.minorThreat = getTileMinorThreat(board, player, r_play, column);
 
-        // Check winning move
+        // Get the winning move for the tile
         metrics.winningMove = getTileWinningMove(board, player, r_play, column);
 
         return metrics;
