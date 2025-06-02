@@ -220,7 +220,7 @@ public:
      */
     void removeAllBranchesExcept(Column col)
     {
-        cout << children.size() << " children before removing branches except " << Connect4Board::colToChar(col) << endl;
+        // cout << children.size() << " children before removing branches except " << Connect4Board::colToChar(col) << endl;
         for (TreeNode *it : children)
         {
             if (it->move != col)

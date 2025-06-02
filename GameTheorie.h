@@ -220,6 +220,7 @@ public:
         }
 
         Tree copy = *tree;
+
         // Prune the tree to the best move for the current player
         // copy.prune(player == PLAYER);
 
@@ -229,19 +230,14 @@ public:
 
         for (auto child : copy.root->children)
         {
-            // if (child->owner == (player == PLAYER ? 1 : 2))
-            // {
-            //     // Return the first child that matches the player's owner
-            //     // return child->move;
-            // }
-            // cout << "Child: " << Connect4Board::colToChar(child->move) << to_string(child->row)
-            //      << " Owner: " << (child->owner == 1 ? "Player 1" : "Player 2")
-            //      << " Win: " << (child->metrics.winningMove ? "True" : "False")
-            //      << " Threat: " << (child->metrics.immediateThreat ? "True" : "False")
-            //      << " Minor Threat: " << (child->metrics.minorThreat ? "True" : "False")
-            //      << " Win Options: " << child->metrics.winOptions
-            //      << " Pressure: " << child->metrics.pressure
-            //      << endl;
+            cout << "Child: " << Connect4Board::colToChar(child->move) << to_string(child->row)
+                 << " Owner: " << (child->owner == 1 ? "Player 1" : "Player 2")
+                 << " Win: " << (child->metrics.winningMove ? "True" : "False")
+                 << " Threat: " << (child->metrics.immediateThreat ? "True" : "False")
+                 << " Minor Threat: " << (child->metrics.minorThreat ? "True" : "False")
+                 << " Win Options: " << child->metrics.winOptions
+                 << " Pressure: " << child->metrics.pressure
+                 << endl;
 
             if (child->metrics.winningMove)
             {

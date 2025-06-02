@@ -5,40 +5,22 @@ int main()
     // Initialisation
     cout << "Starting game theorie" << endl;
 
-    Connect4Board initBoard;
-
-    // initBoard.dropDisc(Column::B, Player::PLAYER1);
-    // initBoard.dropDisc(Column::B, Player::PLAYER1);
-    // initBoard.dropDisc(Column::B, Player::PLAYER1);
-
-    Player startingPlayer = Player::PLAYER1; // PLAYER1 (user) or PLAYER2 (system)
-    Player opponentPlayer = initBoard.getOponent(startingPlayer);
-
-    // Player player = Player::PLAYER1;
-    // Player opponent = initBoard.getOponent(player);
-    GameTheorie::Level level = GameTheorie::Level::EASY;
-
-    GameTheorie brain = GameTheorie(initBoard, startingPlayer, 2, level); // depth 4 should compile fast enough, 5 or higher will be slow
-    Connect4Board board = brain.getBoard();                               // Use the initial board state
-    // board.dropDisc(Column::D, Player::PLAYER1);
-    Tree *tree = brain.tree;
-
-    board.print();
-    // int best = brain.getBestMoveWithVisualization(board, player, opponent, 3, "tree.dot");
 
     // Config
     bool debug = true;
-    // Connect4Board::Cell startingPlayer = Connect4Board::PLAYER1;
-
-    // Preset
-    // board.dropDisc(Column::B, Player::PLAYER1);
-    // board.dropDisc(Column::C, Player::PLAYER2);
-    // board.dropDisc(Column::D, Player::PLAYER1);
-    // board.dropDisc(Column::B, Player::PLAYER2);
-    // board.dropDisc(Column::D, Player::PLAYER1);
-    // board.dropDisc(Column::G, Player::PLAYER2);
-
     bool run = true;
+
+    Connect4Board initBoard;
+    Player startingPlayer = Player::PLAYER1; // PLAYER1 (user) or PLAYER2 (system)
+    Player opponentPlayer = initBoard.getOponent(startingPlayer);
+
+    GameTheorie::Level level = GameTheorie::Level::EASY;
+
+    GameTheorie brain = GameTheorie(initBoard, startingPlayer, 2, level); // depth 4 should compile fast enough, 5 or higher will be slow
+    Connect4Board board = brain.getBoard();                              
+    Tree *tree = brain.tree;
+
+    board.print();
 
     string move;
     while (run)

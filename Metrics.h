@@ -350,7 +350,7 @@ public:
                                int r_play, Column column)
     {
         Player opponent = board.getOponent(player);
-        if (board.inBoard(r_play, column) ||
+        if (!board.inBoard(r_play, column) ||
             board.getCell(r_play, column) != Player::EMPTY)
         {
             return -1;
@@ -418,7 +418,7 @@ public:
                                  int column)
     {
         Player opponent = board.getOponent(player);
-        if (board.inBoard(r_play, column) ||
+        if (!board.inBoard(r_play, column) ||
             board.getCell(r_play, column) != Player::EMPTY)
         {
             return -1;
@@ -613,6 +613,8 @@ public:
 
         // Get the pressure for the tile
         metrics.pressure = getTilePressure(board, player, r_play, column);
+        // cout << "Pressure for tile (" << board.ROWS - r_play << ", " << Connect4Board::colToChar(column) << "): "
+        //      << getTilePressure(board, player, r_play, column) << endl;
 
         // Get the win options for the tile
         metrics.winOptions = getTileWinOptions(board, player, r_play, column);
@@ -625,6 +627,14 @@ public:
 
         // Get the winning move for the tile
         metrics.winningMove = getTileWinningMove(board, player, r_play, column);
+
+        cout << "Metrics for tile (" << board.ROWS - r_play << ", " << Connect4Board::colToChar(column) << "): "
+             << "Owner: " << (player == Connect4Board::PLAYER1 ? "Player 1" : "Player 2")
+             << ", Pressure: " << metrics.pressure
+             << ", Win Options: " << metrics.winOptions
+             << ", Immediate Threat: " << (metrics.immediateThreat ? "Yes" : "No")
+             << ", Minor Threat: " << (metrics.minorThreat ? "Yes" : "No")
+             << ", Winning Move: " << (metrics.winningMove ? "Yes" : "No") << endl;
 
         return metrics;
     }
