@@ -34,11 +34,13 @@ int main()
     // board.dropDisc(Column::D, Player::PLAYER1);
     // board.dropDisc(Column::G, Player::PLAYER2);
 
-    bool run = false;
+    bool run = true;
 
     string move;
     while (run)
     {
+
+        brain.getBestMoveV2(player);
 
         cout << "Enter your move (A-G) or 'exit' to quit: " << endl;
         getline(cin, move);

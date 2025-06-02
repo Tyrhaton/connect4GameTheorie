@@ -64,7 +64,7 @@ public:
         }
 
         vector<Column> moves = board.getPossibleMoves();
-        cout << moves.size() << " possible moves for player " << endl;
+        // cout << moves.size() << " possible moves for player " << endl;
         children.clear();
 
         for (const Column &col : moves)

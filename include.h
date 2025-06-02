@@ -1,5 +1,5 @@
-#ifndef INCLUDE_H
-#define INCLUDE_H
+#ifndef INCLUDE_GAME_THEORIE_H
+#define INCLUDE_GAME_THEORIE_H
 
 #include <iostream>
 #include <string>
@@ -25,4 +25,4 @@ using Player = Connect4Board::Player;
 #include "Tree.h"
 #include "GameTheorie.h"
 
-#endif // INCLUDE_H
+#endif // INCLUDE_GAME_THEORIE_H

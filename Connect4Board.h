@@ -203,7 +203,6 @@ public:
     {
         if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
             throw out_of_range("Row or column index out of range");
-        // return grid[ROWS - 1 - row][COLS - 1 - col];
         return grid[row][col];
     }
 
@@ -220,7 +219,6 @@ public:
         {
             throw out_of_range("Connect4Board::setCell: index out of range");
         }
-        // grid[ROWS - 1 - row][COLS - 1 - column] = val;
         grid[row][column] = val;
     }
 

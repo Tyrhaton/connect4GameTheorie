@@ -201,6 +201,47 @@ public:
         return bestMove;
     }
 
+    Column getBestMoveV2(Player player)
+    {
+        if (!tree)
+        {
+            throw runtime_error("Tree is not initialized.");
+        }
+        if (!board)
+        {
+            throw runtime_error("Board is not initialized.");
+        }
+
+        // Get the root node of the tree
+        TreeNode *root = tree->root;
+        if (!root)
+        {
+            throw runtime_error("Tree root is not initialized.");
+        }
+
+        Tree copy = *tree;
+        // Prune the tree to the best move for the current player
+        copy.prune(player == PLAYER);
+
+        for (auto child : copy.root->children)
+        {
+            // if (child->owner == (player == PLAYER ? 1 : 2))
+            // {
+            //     // Return the first child that matches the player's owner
+            //     // return child->move;
+            // }
+            cout << "Child: " << child->label
+                 << " Owner: " << child->owner
+                 << " Win: " << (child->win ? "Yes" : "No")
+                 << " Pressure: " << child->metrics.pressure
+                 << " Win Options: " << child->metrics.winOptions
+                 << endl;
+        }
+
+        // Return the best move from the root node
+        // return root->getBestMove();
+    }
+
     /**
      * Set the board and player for this game theory instance
      * @param newBoard The new Connect4Board instance
