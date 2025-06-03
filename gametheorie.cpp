@@ -16,7 +16,7 @@ int main()
 
     GameTheorie::Level level = GameTheorie::Level::EASY;
 
-    GameTheorie brain = GameTheorie(initBoard, startingPlayer, 2, level); // depth 4 should compile fast enough, 5 or higher will be slow
+    GameTheorie brain = GameTheorie(initBoard, startingPlayer, 1, level); // depth 4 should compile fast enough, 5 or higher will be slow
     Connect4Board board = brain.getBoard();                              
     Tree *tree = brain.tree;
 

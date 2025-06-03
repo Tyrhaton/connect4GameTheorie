@@ -82,24 +82,52 @@ public:
             return true;
         }
 
+        if (!children.empty())
+        {
+
+            // Recurse deeper
+            for (TreeNode *child : children)
+            {
+                // Reconstruct the board state up to this child (drop child->move on a copy of board)
+                Connect4Board nextBoard = board;
+                nextBoard.dropDisc(child->move, player);
+                child->addLayer(
+                    nextBoard,
+                    depth,
+                    child->level);
+            }
+            // Already expanded this node once—no need to re‐expand from here.
+            // (Or you could choose to prune & re‐grow if you need to re‐evaluate metrics.)
+            return true;
+        }
+
         vector<Column> moves = board.getPossibleMoves();
         children.clear();
 
         // Prune non-winning siblings if any win exists
         bool hasWin = false;
 
-        for (const Column &col : moves)
+        for (const Column &column : moves)
         {
-            if (board.findRow(col) < 0)
-            {
-                continue;
-            }
+            // if (board.findRow(column) < 0)
+            // {
+            //     continue;
+            // }
 
+            cout << "==========================" << endl;
             Connect4Board copy = board;
-            int row = copy.findRow(col);
-            TileMetrics metrics = Metrics::generateMetricsForTile(copy, player, row, col);
+            int row = copy.findRow(column);
+            if (row < 0)
+            {
+                continue; // Column is full, skip
+            }
+            TileMetrics metrics = Metrics::generateMetricsForTile(copy, player, row, column);
 
-            copy.dropDisc(col, player);
+            // copy.dropDisc(column, player);
+            copy.setCell(row, column, player);
+
+            copy.print();
+            cout << "After setting cell: " << Connect4Board::colToChar(column) << " " << to_string(copy.ROWS - row) << " " << (player ? "Player1" : "Player2") << endl;
 
             bool oppCanWin = false;
             for (const Column &oppCol : copy.getPossibleMoves())
@@ -118,16 +146,17 @@ public:
                 continue;
             }
 
-            // cout << to_string(board.ROWS - row) << " " << Connect4Board::colToChar(col) << " " << player << " " << metrics.pressure << " " << metrics.winOptions << endl;
+            // cout << to_string(board.ROWS - row) << " " << Connect4Board::colToChar(column) << " " << player << " " << metrics.pressure << " " << metrics.winOptions << endl;
             TreeNode *child = new TreeNode(
-                col,
-                Connect4Board::colToChar(col),
+                column,
+                Connect4Board::colToChar(column),
                 currentLayer + 1,
                 player,
                 metrics,
                 board.ROWS - row);
 
             addChild(child);
+            copy.setCell(row, column, Player::EMPTY);
 
             if (child->metrics.winningMove)
             {
@@ -156,6 +185,7 @@ public:
             // Reconstruct the board state up to this child (drop child->move on a copy of board)
             Connect4Board nextBoard = board;
             nextBoard.dropDisc(child->move, player);
+            // nextBoard.dropDisc(move, player);
             child->addLayer(
                 nextBoard,
                 depth - 1,
