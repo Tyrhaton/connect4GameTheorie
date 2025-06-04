@@ -8,7 +8,7 @@ int main()
     // Config
     bool debug = true;
     bool run = true;
-    bool letBotPlay = true; // if false, the user plays both players
+    bool letBotPlay = false; // if false, the user plays both players
 
     Connect4Board initBoard;
     Player startingPlayer = Player::PLAYER1; // PLAYER1 (user) or PLAYER2 (system)
@@ -55,7 +55,7 @@ int main()
             cout << "Best move for player 2: " << Connect4Board::colToChar(bestMove) << endl;
             cout << "Player2: Enter your move (A-G) or 'exit' to quit: " << endl;
             getline(cin, move);
-            Column bestMove = Connect4Board::charToColumn(move[0]);
+            bestMove = Connect4Board::charToColumn(move[0]);
         }
 
         bool player2Won = board.dropDisc(bestMove, opponentPlayer);

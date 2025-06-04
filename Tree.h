@@ -377,6 +377,20 @@ public:
         default:
             color = "white";
         }
+
+        if (node->metrics.winningMove)
+        {
+            color = "lightgreen";
+        }
+        else if (node->metrics.immediateThreat)
+        {
+            color = "yellow";
+        }
+        else if (node->metrics.minorThreat)
+        {
+            color = "orange";
+        }
+
         string ofs = "";
         if (root)
         {
