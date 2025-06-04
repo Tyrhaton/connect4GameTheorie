@@ -84,7 +84,6 @@ public:
         vector<bool> minorThreats = Metrics::computeMinorThreats(board, player);
         vector<bool> winMoves = Metrics::computeWinningMoves(board, player);
 
-        // TODO: implement best-move logic here
         if (debug)
         {
             cout << "Possible moves: " << endl;
@@ -155,8 +154,6 @@ public:
             cout << endl;
         }
 
-        // level 0
-
         int bestPressure = -1;
         int bestWinOptions = -1;
         Column bestMove = possibleMoves.front();
@@ -187,7 +184,6 @@ public:
             }
             else if (p == bestWinOptions)
             {
-                // check pressure
                 if (pressure[col] > bestPressure)
                 {
                     bestPressure = pressure[col];
@@ -195,8 +191,6 @@ public:
                 }
             }
         }
-
-        // level 1
 
         return bestMove;
     }
@@ -226,33 +220,40 @@ public:
 
         int bestPressure = -1;
         int bestWinOptions = -1;
+        Column threatTile = Column::INVALID;
+        Column minorThreatTile = Column::INVALID;
         Column bestMove = copy.root->children.front()->move;
 
         for (auto child : copy.root->children)
         {
-            cout << "Child: " << Connect4Board::colToChar(child->move) << to_string(child->row)
-                 << " Owner: " << (child->owner == 1 ? "Player 1" : "Player 2")
-                 << " Win: " << (child->metrics.winningMove ? "True" : "False")
-                 << " Threat: " << (child->metrics.immediateThreat ? "True" : "False")
-                 << " Minor Threat: " << (child->metrics.minorThreat ? "True" : "False")
-                 << " Win Options: " << child->metrics.winOptions
-                 << " Pressure: " << child->metrics.pressure
-                 << endl;
+            // cout << "Child: " << Connect4Board::colToChar(child->move) << to_string(child->row)
+            //      << " Owner: " << (child->owner == 1 ? "Player 1" : "Player 2")
+            //      << " Win: " << (child->metrics.winningMove ? "True" : "False")
+            //      << " Threat: " << (child->metrics.immediateThreat ? "True" : "False")
+            //      << " Minor Threat: " << (child->metrics.minorThreat ? "True" : "False")
+            //      << " Win Options: " << child->metrics.winOptions
+            //      << " Pressure: " << child->metrics.pressure
+            //      << endl;
 
             if (child->metrics.winningMove)
             {
-                // If the child node is a winning move, return it
                 return child->move;
             }
             if (child->metrics.immediateThreat)
             {
-                // If the child node has an immediate threat, return it
-                return child->move;
+                if (threatTile == Column::INVALID || child->metrics.pressure > bestPressure)
+                {
+                    threatTile = child->move;
+                    bestPressure = child->metrics.pressure;
+                }
             }
             if (child->metrics.minorThreat)
             {
-                // If the child node has a minor threat, return it
-                return child->move;
+                if (minorThreatTile == Column::INVALID || child->metrics.pressure > bestPressure)
+                {
+                    minorThreatTile = child->move;
+                    bestPressure = child->metrics.pressure;
+                }
             }
 
             int p = child->metrics.winOptions;
@@ -264,7 +265,6 @@ public:
             }
             else if (p == bestWinOptions)
             {
-                // check pressure
                 if (child->metrics.pressure > bestPressure)
                 {
                     bestPressure = child->metrics.pressure;
@@ -272,9 +272,15 @@ public:
                 }
             }
         }
+        if (threatTile != Column::INVALID)
+        {
+            return threatTile;
+        }
+        if (minorThreatTile != Column::INVALID)
+        {
+            return minorThreatTile;
+        }
 
-        // Return the best move from the root node
-        // return root->getBestMove();
         return bestMove;
     }
 

@@ -16,7 +16,7 @@ int main()
 
     GameTheorie::Level level = GameTheorie::Level::EASY;
 
-    GameTheorie brain = GameTheorie(initBoard, startingPlayer, 1, level); // depth 4 should compile fast enough, 5 or higher will be slow
+    GameTheorie brain = GameTheorie(initBoard, startingPlayer, 3, level); // depth 4 should compile fast enough, 5 or higher will be slow
     Connect4Board board = brain.getBoard();                              
     Tree *tree = brain.tree;
 
@@ -26,7 +26,7 @@ int main()
     while (run)
     {
 
-        cout << "Enter your move (A-G) or 'exit' to quit: " << endl;
+        cout << "Player1: Enter your move (A-G) or 'exit' to quit: " << endl;
         getline(cin, move);
         if (move == "exit" || move == "Exit" || move == "quit" || move == "q")
         {
@@ -52,7 +52,7 @@ int main()
         Column test = brain.getBestMoveV2();
         cout << "Best move for player 2: " << Connect4Board::colToChar(test) << endl;
 
-        cout << "Enter your move (A-G) or 'exit' to quit: " << endl;
+        cout << "Player2: Enter your move (A-G) or 'exit' to quit: " << endl;
         getline(cin, move);
         Column col2 = Connect4Board::charToColumn(move[0]);
 

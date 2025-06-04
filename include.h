@@ -21,7 +21,6 @@ using Column = Connect4Board::Column;
 using Player = Connect4Board::Player;
 
 #include "MoveRecorder.h"
-
 #include "Metrics.h"
 #include "Tree.h"
 #include "GameTheorie.h"

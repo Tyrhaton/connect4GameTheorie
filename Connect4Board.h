@@ -35,7 +35,8 @@ public:
         D = 3,
         E = 4,
         F = 5,
-        G = 6
+        G = 6,
+        INVALID = -1
     };
 
     /**
@@ -103,7 +104,10 @@ public:
             return string(1, 'F');
         case Column::G:
             return string(1, 'G');
+        case Column::INVALID:
+            return string(1, '?');
         default:
+            cout << "Invalid column: " << column << endl;
             throw invalid_argument("Invalid column");
         }
     }
@@ -181,7 +185,6 @@ public:
     {
         if (column < 0 || column >= COLS)
         {
-            // cout << "Invalid column. Please choose a column between A and G. selected column:" << column << endl;
             throw out_of_range("Column index out of range (" + colToChar(column) + ")");
         }
         int row = findRow(column);
@@ -202,7 +205,7 @@ public:
      */
     Player getCell(int row, int col) const
     {
-        if (row < 0 || row >= ROWS || col < 0 || col >= COLS)
+        if (!inBoard(row, col))
         {
             throw out_of_range("Row or column index out of range");
         }
@@ -218,7 +221,7 @@ public:
     void setCell(int row, int column, Player val)
     {
         // optionele bound-checks:
-        if (row < 0 || row >= ROWS || column < 0 || column >= COLS)
+        if (!inBoard(row, column))
         {
             throw out_of_range("Connect4Board::setCell: index out of range");
         }
@@ -242,13 +245,14 @@ public:
      */
     bool checkWin(Player player) const
     {
-
         for (int r = 0; r < ROWS; ++r)
         {
             for (int c = 0; c < COLS; ++c)
             {
                 if (getCell(r, c) != player)
+                {
                     continue;
+                }
                 for (int dir = 0; dir < 4; ++dir)
                 {
                     int cnt = 1;
@@ -257,7 +261,9 @@ public:
                     {
                         ++cnt;
                         if (cnt == 4)
+                        {
                             return true;
+                        }
                         rr += dr[dir];
                         cc += dc[dir];
                     }
@@ -285,13 +291,12 @@ public:
      */
     int findRow(int column)
     {
-        // Search from the bottom row up
         for (int row = ROWS - 1; row >= 0; --row)
         {
             if (getCell(row, column) == Player::EMPTY)
                 return row;
         }
-        return -1; // column is full
+        return -1; 
     }
 
     /**
@@ -335,7 +340,6 @@ public:
      */
     vector<Column> getPossibleMoves()
     {
-        // Check for possible moves in the current board state
         vector<Column> validMoves;
 
         for (int col = 0; col < COLS; ++col)

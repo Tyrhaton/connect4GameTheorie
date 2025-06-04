@@ -2,8 +2,6 @@
 #define METRICS_H
 
 #include "include.h"
-
-// The minimal signature for generateMetricsForTile that everyone can see:
 struct TileMetrics
 {
     int pressure;
@@ -66,8 +64,9 @@ public:
                         }
                     }
                     if (!ok)
+                    {
                         continue;
-
+                    }
                     bool covers = false;
                     for (int i = 0; i < 4; ++i)
                     {
@@ -78,8 +77,9 @@ public:
                         }
                     }
                     if (!covers)
+                    {
                         continue;
-
+                    }
                     int ownCount = 0;
                     for (int i = 0; i < 4; ++i)
                     {
@@ -144,8 +144,9 @@ public:
                         }
                     }
                     if (!valid)
+                    {
                         continue;
-
+                    }
                     bool covers = false;
                     for (int k = 0; k < 4; ++k)
                     {
@@ -156,8 +157,9 @@ public:
                         }
                     }
                     if (!covers)
+                    {
                         continue;
-
+                    }
                     ++count;
                 }
             }
@@ -219,8 +221,9 @@ public:
         {
             int r_play = board.findRow(column);
             if (r_play < 0)
+            {
                 continue;
-
+            }
             bool isMinor = false;
 
             for (int dir = 0; dir < 4 && !isMinor; dir++)
@@ -230,7 +233,9 @@ public:
                     int sr = r_play - dr4[dir] * off;
                     int sc = column - dc4[dir] * off;
                     if (!board.inBoard(sr, sc))
+                    {
                         continue;
+                    }
                     int countOp = 0, countEmp = 0, countMe = 0;
                     bool covers = false;
                     for (int k = 0; k < 4; k++)
@@ -269,8 +274,9 @@ public:
             }
 
             if (!isMinor)
+            {
                 continue;
-
+            }
             bool adj = false;
             for (int k = 0; k < 8 && !adj; k++)
             {
@@ -363,30 +369,11 @@ public:
             {
                 int rr = r_play + dr4[dir] * step;
                 int cc = column + dc4[dir] * step;
-                if (rr < 0 || rr >= board.ROWS || cc < 0 || cc >= board.COLS)
+                if (!board.inBoard(rr, cc))
+                {
                     break;
+                }
                 Player c = board.getCell(rr, cc);
-                if (c == player)
-                {
-                    ++sum;
-                }
-                else if (c == opponent)
-                {
-                    break;
-                }
-                else
-                {
-                    continue;
-                }
-            }
-            for (int step = 1; step < 4; ++step)
-            {
-                int rr = r_play - dr4[dir] * step;
-                int cc = column - dc4[dir] * step;
-                if (rr < 0 || rr >= board.ROWS || cc < 0 || cc >= board.COLS)
-                    break;
-                Player c = board.getCell(rr, cc);
-
                 if (c == player)
                 {
                     ++sum;
@@ -428,13 +415,11 @@ public:
 
         for (int dir = 0; dir < 4; ++dir)
         {
-            // Slide a 4‐cell window so that (r_play, column) occupies each offset [0..3]
             for (int off = 0; off < 4; ++off)
             {
                 int sr = r_play - dr4[dir] * off;
                 int sc = column - dc4[dir] * off;
 
-                // a) Verify the 4‐cell window is fully on‐board and contains no opponent discs
                 bool valid = true;
                 for (int k = 0; k < 4; ++k)
                 {
@@ -447,9 +432,9 @@ public:
                     }
                 }
                 if (!valid)
+                {
                     continue;
-
-                // b) Ensure (r_play, column) is indeed within this window
+                }
                 bool covers = false;
                 for (int k = 0; k < 4; ++k)
                 {
@@ -461,9 +446,9 @@ public:
                     }
                 }
                 if (!covers)
+                {
                     continue;
-
-                // c) If we reach here, this window is a valid potential win‐option
+                }
                 ++count;
             }
         }
@@ -613,9 +598,6 @@ public:
 
         // Get the pressure for the tile
         metrics.pressure = getTilePressure(board, player, r_play, column);
-        // cout << "Pressure for tile (" << board.ROWS - r_play << ", " << Connect4Board::colToChar(column) << "): "
-        //      << getTilePressure(board, player, r_play, column) << endl;
-
         // Get the win options for the tile
         metrics.winOptions = getTileWinOptions(board, player, r_play, column);
 
@@ -628,13 +610,13 @@ public:
         // Get the winning move for the tile
         metrics.winningMove = getTileWinningMove(board, player, r_play, column);
 
-        cout << "Metrics for tile (" << board.ROWS - r_play << ", " << Connect4Board::colToChar(column) << "): "
-             << "Owner: " << (player == Connect4Board::PLAYER1 ? "Player 1" : "Player 2")
-             << ", Pressure: " << metrics.pressure
-             << ", Win Options: " << metrics.winOptions
-             << ", Immediate Threat: " << (metrics.immediateThreat ? "Yes" : "No")
-             << ", Minor Threat: " << (metrics.minorThreat ? "Yes" : "No")
-             << ", Winning Move: " << (metrics.winningMove ? "Yes" : "No") << endl;
+        // cout << "Metrics for tile (" << board.ROWS - r_play << ", " << Connect4Board::colToChar(column) << "): "
+        //      << "Owner: " << (player == Connect4Board::PLAYER1 ? "Player 1" : "Player 2")
+        //      << ", Pressure: " << metrics.pressure
+        //      << ", Win Options: " << metrics.winOptions
+        //      << ", Immediate Threat: " << (metrics.immediateThreat ? "Yes" : "No")
+        //      << ", Minor Threat: " << (metrics.minorThreat ? "Yes" : "No")
+        //      << ", Winning Move: " << (metrics.winningMove ? "Yes" : "No") << endl;
 
         return metrics;
     }

@@ -13,14 +13,13 @@ public:
     string label;
     int level;
     Player owner;
-    // bool win;
     TileMetrics metrics;
     int id;
     static int nextId;
     int row;
     vector<TreeNode *> children;
 
-    TreeNode(Column move_, const string label_, int level_ = 0, Player owner_ = Player::EMPTY, TileMetrics metrics_ = {0, 0, false, false, false}, int row_ = -1)
+    TreeNode(Column move_ = Column::INVALID, const string label_ = "", int level_ = 0, Player owner_ = Player::EMPTY, TileMetrics metrics_ = {0, 0, false, false, false}, int row_ = -1)
         : move(move_), label(label_), level(level_), owner(owner_), metrics(metrics_), id(nextId++), row(row_), children()
     {
     }
@@ -84,11 +83,8 @@ public:
 
         if (!children.empty())
         {
-
-            // Recurse deeper
             for (TreeNode *child : children)
             {
-                // Reconstruct the board state up to this child (drop child->move on a copy of board)
                 Connect4Board nextBoard = board;
                 nextBoard.dropDisc(child->move, player);
                 child->addLayer(
@@ -96,38 +92,26 @@ public:
                     depth,
                     child->level);
             }
-            // Already expanded this node once—no need to re‐expand from here.
-            // (Or you could choose to prune & re‐grow if you need to re‐evaluate metrics.)
             return true;
         }
 
         vector<Column> moves = board.getPossibleMoves();
         children.clear();
 
-        // Prune non-winning siblings if any win exists
         bool hasWin = false;
 
         for (const Column &column : moves)
         {
-            // if (board.findRow(column) < 0)
-            // {
-            //     continue;
-            // }
 
-            cout << "==========================" << endl;
             Connect4Board copy = board;
             int row = copy.findRow(column);
             if (row < 0)
             {
-                continue; // Column is full, skip
+                continue;
             }
             TileMetrics metrics = Metrics::generateMetricsForTile(copy, player, row, column);
 
-            // copy.dropDisc(column, player);
             copy.setCell(row, column, player);
-
-            copy.print();
-            cout << "After setting cell: " << Connect4Board::colToChar(column) << " " << to_string(copy.ROWS - row) << " " << (player ? "Player1" : "Player2") << endl;
 
             bool oppCanWin = false;
             for (const Column &oppCol : copy.getPossibleMoves())
@@ -146,7 +130,6 @@ public:
                 continue;
             }
 
-            // cout << to_string(board.ROWS - row) << " " << Connect4Board::colToChar(column) << " " << player << " " << metrics.pressure << " " << metrics.winOptions << endl;
             TreeNode *child = new TreeNode(
                 column,
                 Connect4Board::colToChar(column),
@@ -179,13 +162,10 @@ public:
                 }
             }
         }
-        // Recurse deeper
         for (TreeNode *child : children)
         {
-            // Reconstruct the board state up to this child (drop child->move on a copy of board)
             Connect4Board nextBoard = board;
             nextBoard.dropDisc(child->move, player);
-            // nextBoard.dropDisc(move, player);
             child->addLayer(
                 nextBoard,
                 depth - 1,
@@ -248,16 +228,31 @@ public:
      * This will delete all children that do not match the specified column.
      * @param col The column to keep.
      */
-    void removeAllBranchesExcept(Column col)
+    void removeAllBranchesExcept(Column col = Column::INVALID)
     {
-        // cout << children.size() << " children before removing branches except " << Connect4Board::colToChar(col) << endl;
-        for (TreeNode *it : children)
+        // cout << children.size()
+        //      << " children before removing branches except "
+        //      << Connect4Board::colToChar(col) << endl;
+
+        for (size_t i = 0; i < children.size();)
         {
-            if (it->move != col)
+            TreeNode *child = children[i];
+
+            if (child->move != col)
             {
-                removeBranch(it->move);
+                children.erase(children.begin() + i);
+
+                deleteSubtree(child);
+            }
+            else
+            {
+                ++i;
             }
         }
+
+        // cout << children.size()
+        //      << " children after removing branches except "
+        //      << Connect4Board::colToChar(col) << endl;
     }
 
     /**
@@ -276,6 +271,16 @@ public:
             }
         }
     }
+    /**
+     * Remove a branch from the tree based on the specified column.
+     * This will delete the subtree rooted at the child node that matches the column.
+     * @param column The column to remove.
+     */
+    void removeBranchByNode()
+    {
+        deleteSubtree(this);
+        removeChild(this);
+    }
 };
 
 /**
@@ -288,9 +293,12 @@ inline void deleteSubtree(TreeNode *node)
     {
         return;
     }
-    for (TreeNode *child : node->children)
+    if (!node->children.empty())
     {
-        deleteSubtree(child);
+        for (TreeNode *child : node->children)
+        {
+            deleteSubtree(child);
+        }
     }
     node->children.clear();
     delete node;
@@ -369,7 +377,6 @@ public:
         default:
             color = "white";
         }
-        // Node definition with label and fillcolor
         string ofs = "";
         if (root)
         {
@@ -533,8 +540,19 @@ public:
     {
         root->removeAllBranchesExcept(column);
 
-        TreeNode *child = root->children[0];
-        setRoot(child);
+        // cout << "Moving root up to column: " << Connect4Board::colToChar(column) << endl;
+        if (root->children.empty())
+        {
+            throw runtime_error("No children found for the current root. Cannot move root up.");
+        }
+
+        for (TreeNode *it : root->children)
+        {
+            if (it->move == column)
+            {
+                setRoot(it);
+            }
+        }
     }
 
     /**
