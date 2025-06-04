@@ -5,10 +5,10 @@ int main()
     // Initialisation
     cout << "Starting game theorie" << endl;
 
-
     // Config
     bool debug = true;
     bool run = true;
+    bool letBotPlay = true; // if false, the user plays both players
 
     Connect4Board initBoard;
     Player startingPlayer = Player::PLAYER1; // PLAYER1 (user) or PLAYER2 (system)
@@ -17,7 +17,7 @@ int main()
     GameTheorie::Level level = GameTheorie::Level::EASY;
 
     GameTheorie brain = GameTheorie(initBoard, startingPlayer, 3, level); // depth 4 should compile fast enough, 5 or higher will be slow
-    Connect4Board board = brain.getBoard();                              
+    Connect4Board board = brain.getBoard();
     Tree *tree = brain.tree;
 
     board.print();
@@ -48,16 +48,18 @@ int main()
 
         // player 2
         // Column bestMove = brain.getBestMove(board, opponentPlayer, level, debug);
-        // Column bestMove = brain.getBestMoveV2();
-        Column test = brain.getBestMoveV2();
-        cout << "Best move for player 2: " << Connect4Board::colToChar(test) << endl;
+        Column bestMove = brain.getBestMoveV2();
 
-        cout << "Player2: Enter your move (A-G) or 'exit' to quit: " << endl;
-        getline(cin, move);
-        Column col2 = Connect4Board::charToColumn(move[0]);
+        if (!letBotPlay)
+        {
+            cout << "Best move for player 2: " << Connect4Board::colToChar(bestMove) << endl;
+            cout << "Player2: Enter your move (A-G) or 'exit' to quit: " << endl;
+            getline(cin, move);
+            Column bestMove = Connect4Board::charToColumn(move[0]);
+        }
 
-        bool player2Won = board.dropDisc(col2, opponentPlayer);
-        tree->updateTree(board, col2);
+        bool player2Won = board.dropDisc(bestMove, opponentPlayer);
+        tree->updateTree(board, bestMove);
 
         board.print();
         if (player2Won)
