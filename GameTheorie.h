@@ -65,14 +65,84 @@ public:
     }
 
     /**
+     * Play a move in the specified column for the given player and update the game tree
+     * @param column The column to play in
+     * @param player The player making the move, default is PLAYER1
+     * @return true if the player won, false otherwise
+     */
+    bool playMove(Column column, Player player = Player::PLAYER1)
+    {
+        if (!board)
+        {
+            throw runtime_error("Board is not initialized.");
+        }
+        if (column < 0 || column >= COLS)
+        {
+            throw invalid_argument("Invalid column: " + to_string(column));
+        }
+        cout << "Player " << (player == Player::PLAYER1 ? "1" : "2") << " plays in column: " << Connect4Board::colToChar(column) << endl;
+        bool playerWon = board->dropDisc(column, player);
+        // if (!playerWon)
+        // {
+        //     throw runtime_error("Invalid move: " + Connect4Board::colToChar(column));
+        // }
+        tree->updateTree(*board, column);
+        return playerWon;
+    }
+
+    /**
+     * print the current state of the board
+     */
+    void printBoard()
+    {
+        if (!board)
+        {
+            throw runtime_error("Board is not initialized.");
+        }
+        board->print();
+    }
+
+    /**
+     * print the current state of the game tree
+     */
+    void printTree()
+    {
+        if (!tree)
+        {
+            throw runtime_error("Tree is not initialized.");
+        }
+        tree->print();
+    }
+
+    Column getBestMove(Player player, GameTheorie::Level level = MEDIUM, bool debug = false)
+    {
+        if (level == EASY)
+        {
+            return getBestMoveEasy(*board, player, debug);
+        }
+        else if (level == MEDIUM)
+        {
+            return getBestMoveMedium(*board);
+        }
+        else if (level == HARD)
+        {
+            // Implement hard level logic here
+            throw runtime_error("Hard level not implemented yet.");
+        }
+        else
+        {
+            throw invalid_argument("Invalid game theory level.");
+        }
+    }
+
+    /**
      * Get the best move for the current player
      * @param board The current state of the board
      * @param player The current player
      * @return The best move as a Column
      */
-    Column getBestMove(Connect4Board board, Player player, GameTheorie::Level level = EASY, bool debug = false)
+    Column getBestMoveEasy(Connect4Board board, Player player, bool debug = false)
     {
-        (void)level; // Unused parameter
         vector<Column> possibleMoves = board.getPossibleMoves();
         if (possibleMoves.empty())
         {
@@ -195,7 +265,7 @@ public:
         return bestMove;
     }
 
-    Column getBestMoveV2(Connect4Board board)
+    Column getBestMoveMedium(Connect4Board board)
     {
         if (!tree)
         {
