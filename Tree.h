@@ -68,7 +68,132 @@ public:
      * @param currentLayer The current layer of the tree.
      * @return True if the layer was added successfully, false otherwise.
      */
-    bool addLayer(
+    bool addLayer(Connect4Board &board,
+                  int depth,
+                  int currentLayer)
+    {
+        Player player = board.getOponent(owner); // it’s ‘player’’s turn here
+        Player opponent = owner;                 // opponent is who just moved
+
+        if (depth <= 0 || board.full())
+        {
+            // no more depth to expand, or board is full
+            return true;
+        }
+
+        // CASE A: Already expanded once → just recurse deeper under each existing child
+        if (!children.empty())
+        {
+            for (TreeNode *child : children)
+            {
+                // 1) Compute where child->move would land on the CURRENT board
+                int r_child = board.findRow(child->move);
+                // assert(r_child >= 0 && board.getCell(r_child, child->move) == Player::EMPTY);
+
+                // 2) Drop that disc in place so child sees “root→…→this→child”
+                board.dropDisc(child->move, player);
+                // assert(board.getCell(r_child, child->move) == player);
+
+                // 3) Recurse with depth−1
+                child->addLayer(board, depth - 1, child->level);
+
+                // 4) Undo immediately
+                board.setCell(r_child, child->move, Player::EMPTY);
+                // assert(board.getCell(r_child, child->move) == Player::EMPTY);
+            }
+            return true;
+        }
+
+        // CASE B: No children yet → create exactly one layer under “this” node.
+        vector<Column> moves = board.getPossibleMoves();
+        bool hasWin = false;
+
+        for (Column column : moves)
+        {
+            int r_play = board.findRow(column);
+            if (r_play < 0)
+                continue; // column is unexpectedly full
+
+            // 1) Compute metrics on a board where (r_play, column) is STILL EMPTY
+            TileMetrics tm = Metrics::generateMetricsForTile(board, player, r_play, column);
+
+            // 2) Drop the disc in place (so the child’s subtree sees this move)
+            bool ok = board.dropDisc(column, player);
+            // assert(ok && board.getCell(r_play, column) == player);
+
+            // 3) Check if opponent can immediately win in reply; if so, skip this column
+            bool oppCanWin = false;
+            {
+                // We only need a single reply‐move that makes opponent win
+                vector<Column> replyMoves = board.getPossibleMoves();
+                for (Column oppCol : replyMoves)
+                {
+                    // Put opponent’s piece in a local copy, to see if it wins
+                    Connect4Board replyBoard = board;
+                    replyBoard.dropDisc(oppCol, opponent);
+                    if (replyBoard.checkWin(opponent))
+                    {
+                        oppCanWin = true;
+                        break;
+                    }
+                }
+            }
+
+            if (oppCanWin)
+            {
+                // Undo our drop and skip this child entirely
+                board.setCell(r_play, column, Player::EMPTY);
+                continue;
+            }
+
+            // 4) Create the new child node, storing (column, row, metrics, etc.)
+            Player nextOwner = (player == Player::PLAYER1 ? Player::PLAYER2 : Player::PLAYER1);
+            //** Note: row stored as zero‐based r_play. When printing, you can invert if needed.
+            TreeNode *child = new TreeNode(
+                column,
+                Connect4Board::colToChar(column),
+                currentLayer + 1,
+                player,
+                tm,
+                board.ROWS - r_play);
+            children.push_back(child);
+
+            // 5) Recurse under that child with depth−1
+            child->addLayer(board, depth - 1, child->level);
+
+            // 6) Undo our drop before moving to the next sibling
+            board.setCell(r_play, column, Player::EMPTY);
+            // assert(board.getCell(r_play, column) == Player::EMPTY);
+
+            // 7) If this move was an immediate winningMove for us, prune all other siblings
+            if (tm.winningMove)
+            {
+                hasWin = true;
+                break;
+            }
+        }
+
+        // Prune non‐winning siblings if we found a forced win
+        if (hasWin)
+        {
+            for (auto it = children.begin(); it != children.end();)
+            {
+                if (!(*it)->metrics.winningMove)
+                {
+                    deleteSubtree(*it);
+                    it = children.erase(it);
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    bool addLayer2(
         Connect4Board &board,
         int depth,
         int currentLayer)
@@ -293,13 +418,13 @@ inline void deleteSubtree(TreeNode *node)
     {
         return;
     }
-    if (!node->children.empty())
+    // if (!node->children.empty())
+    // {
+    for (TreeNode *child : node->children)
     {
-        for (TreeNode *child : node->children)
-        {
-            deleteSubtree(child);
-        }
+        deleteSubtree(child);
     }
+    // }
     node->children.clear();
     delete node;
 }
@@ -405,6 +530,8 @@ public:
                    " p=" + to_string(node->metrics.pressure) +
                    " w=" + to_string(node->metrics.winOptions) +
                    "\", fillcolor=\"" + color + "\"];\n";
+            // ofs += "  node" + to_string(node->id) + " [label=\"" + to_string(node->level) + ") " + Connect4Board::colToChar(node->move) + to_string(node->row) + ": " +to_string(node->id) +
+            //        "\", fillcolor=\"" + color + "\"];\n";
         }
         for (const TreeNode *child : node->children)
         {
@@ -531,7 +658,8 @@ public:
     void grow(Connect4Board &currentBoard,
               int levels = 1)
     {
-        root->growNode(currentBoard, levels, layers);
+        // root->growNode(currentBoard, levels, layers);
+        root->addLayer(currentBoard, levels, layers);
         layers++;
     }
 
@@ -582,7 +710,7 @@ public:
             throw runtime_error("Tree root is not initialized.");
         }
         moveRootUp(column);
-        grow(board, 1);
+        grow(board, 2);
         toDot();
         dotToSvg();
     }

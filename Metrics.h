@@ -572,6 +572,8 @@ public:
      */
     static bool getTileWinningMove(const Connect4Board &board, Player player, int r_play, Column column)
     {
+        // cout << "Checking winning move for player " << (player == Connect4Board::PLAYER1 ? "Player 1" : "Player 2")
+        //  << " at (" << board.ROWS - r_play << ", " << Connect4Board::colToChar(column) << ")" << endl;
         if (!board.inBoard(r_play, column) ||
             board.getCell(r_play, column) != Player::EMPTY)
         {
@@ -580,6 +582,7 @@ public:
 
         Connect4Board copy = board;
         copy.setCell(r_play, column, player);
+        // cout << "Checking if this is a winning move..." << (copy.checkWin(player) ? "Yes" : "No") << endl;
         return copy.checkWin(player);
     }
 
