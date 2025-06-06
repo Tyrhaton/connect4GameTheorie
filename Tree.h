@@ -72,39 +72,28 @@ public:
                   int depth,
                   int currentLayer)
     {
-        Player player = board.getOponent(owner); // it’s ‘player’’s turn here
-        Player opponent = owner;                 // opponent is who just moved
+        Player player = board.getOponent(owner);
+        Player opponent = owner;
 
         if (depth <= 0 || board.full())
         {
-            // no more depth to expand, or board is full
             return true;
         }
 
-        // CASE A: Already expanded once → just recurse deeper under each existing child
         if (!children.empty())
         {
             for (TreeNode *child : children)
             {
-                // 1) Compute where child->move would land on the CURRENT board
                 int r_child = board.findRow(child->move);
-                // assert(r_child >= 0 && board.getCell(r_child, child->move) == Player::EMPTY);
 
-                // 2) Drop that disc in place so child sees “root→…→this→child”
                 board.dropDisc(child->move, player);
-                // assert(board.getCell(r_child, child->move) == player);
-
-                // 3) Recurse with depth−1
                 child->addLayer(board, depth - 1, child->level);
 
-                // 4) Undo immediately
                 board.setCell(r_child, child->move, Player::EMPTY);
-                // assert(board.getCell(r_child, child->move) == Player::EMPTY);
             }
             return true;
         }
 
-        // CASE B: No children yet → create exactly one layer under “this” node.
         vector<Column> moves = board.getPossibleMoves();
         bool hasWin = false;
 
@@ -112,23 +101,16 @@ public:
         {
             int r_play = board.findRow(column);
             if (r_play < 0)
-                continue; // column is unexpectedly full
-
-            // 1) Compute metrics on a board where (r_play, column) is STILL EMPTY
+            {
+                continue;
+            }
             TileMetrics tm = Metrics::generateMetricsForTile(board, player, r_play, column);
 
-            // 2) Drop the disc in place (so the child’s subtree sees this move)
-            bool ok = board.dropDisc(column, player);
-            // assert(ok && board.getCell(r_play, column) == player);
-
-            // 3) Check if opponent can immediately win in reply; if so, skip this column
             bool oppCanWin = false;
             {
-                // We only need a single reply‐move that makes opponent win
                 vector<Column> replyMoves = board.getPossibleMoves();
                 for (Column oppCol : replyMoves)
                 {
-                    // Put opponent’s piece in a local copy, to see if it wins
                     Connect4Board replyBoard = board;
                     replyBoard.dropDisc(oppCol, opponent);
                     if (replyBoard.checkWin(opponent))
@@ -141,14 +123,10 @@ public:
 
             if (oppCanWin)
             {
-                // Undo our drop and skip this child entirely
                 board.setCell(r_play, column, Player::EMPTY);
                 continue;
             }
 
-            // 4) Create the new child node, storing (column, row, metrics, etc.)
-            Player nextOwner = (player == Player::PLAYER1 ? Player::PLAYER2 : Player::PLAYER1);
-            //** Note: row stored as zero‐based r_play. When printing, you can invert if needed.
             TreeNode *child = new TreeNode(
                 column,
                 Connect4Board::colToChar(column),
@@ -158,14 +136,9 @@ public:
                 board.ROWS - r_play);
             children.push_back(child);
 
-            // 5) Recurse under that child with depth−1
             child->addLayer(board, depth - 1, child->level);
-
-            // 6) Undo our drop before moving to the next sibling
             board.setCell(r_play, column, Player::EMPTY);
-            // assert(board.getCell(r_play, column) == Player::EMPTY);
 
-            // 7) If this move was an immediate winningMove for us, prune all other siblings
             if (tm.winningMove)
             {
                 hasWin = true;
@@ -173,7 +146,6 @@ public:
             }
         }
 
-        // Prune non‐winning siblings if we found a forced win
         if (hasWin)
         {
             for (auto it = children.begin(); it != children.end();)
@@ -193,144 +165,144 @@ public:
         return true;
     }
 
-    bool addLayer2(
-        Connect4Board &board,
-        int depth,
-        int currentLayer)
-    {
-        Player player = board.getOponent(owner);
-        Player opponent = owner;
+    // bool addLayer2(
+    //     Connect4Board &board,
+    //     int depth,
+    //     int currentLayer)
+    // {
+    //     Player player = board.getOponent(owner);
+    //     Player opponent = owner;
 
-        if (depth <= 0 || board.full())
-        {
-            return true;
-        }
+    //     if (depth <= 0 || board.full())
+    //     {
+    //         return true;
+    //     }
 
-        if (!children.empty())
-        {
-            for (TreeNode *child : children)
-            {
-                Connect4Board nextBoard = board;
-                nextBoard.dropDisc(child->move, player);
-                child->addLayer(
-                    nextBoard,
-                    depth,
-                    child->level);
-            }
-            return true;
-        }
+    //     if (!children.empty())
+    //     {
+    //         for (TreeNode *child : children)
+    //         {
+    //             Connect4Board nextBoard = board;
+    //             nextBoard.dropDisc(child->move, player);
+    //             child->addLayer(
+    //                 nextBoard,
+    //                 depth,
+    //                 child->level);
+    //         }
+    //         return true;
+    //     }
 
-        vector<Column> moves = board.getPossibleMoves();
-        children.clear();
+    //     vector<Column> moves = board.getPossibleMoves();
+    //     children.clear();
 
-        bool hasWin = false;
+    //     bool hasWin = false;
 
-        for (const Column &column : moves)
-        {
+    //     for (const Column &column : moves)
+    //     {
 
-            Connect4Board copy = board;
-            int row = copy.findRow(column);
-            if (row < 0)
-            {
-                continue;
-            }
-            TileMetrics metrics = Metrics::generateMetricsForTile(copy, player, row, column);
+    //         Connect4Board copy = board;
+    //         int row = copy.findRow(column);
+    //         if (row < 0)
+    //         {
+    //             continue;
+    //         }
+    //         TileMetrics metrics = Metrics::generateMetricsForTile(copy, player, row, column);
 
-            copy.setCell(row, column, player);
+    //         copy.setCell(row, column, player);
 
-            bool oppCanWin = false;
-            for (const Column &oppCol : copy.getPossibleMoves())
-            {
-                Connect4Board reply = copy;
+    //         bool oppCanWin = false;
+    //         for (const Column &oppCol : copy.getPossibleMoves())
+    //         {
+    //             Connect4Board reply = copy;
 
-                reply.dropDisc(oppCol, opponent);
-                if (reply.checkWin(opponent))
-                {
-                    oppCanWin = true;
-                    break;
-                }
-            }
-            if (oppCanWin)
-            {
-                continue;
-            }
+    //             reply.dropDisc(oppCol, opponent);
+    //             if (reply.checkWin(opponent))
+    //             {
+    //                 oppCanWin = true;
+    //                 break;
+    //             }
+    //         }
+    //         if (oppCanWin)
+    //         {
+    //             continue;
+    //         }
 
-            TreeNode *child = new TreeNode(
-                column,
-                Connect4Board::colToChar(column),
-                currentLayer + 1,
-                player,
-                metrics,
-                board.ROWS - row);
+    //         TreeNode *child = new TreeNode(
+    //             column,
+    //             Connect4Board::colToChar(column),
+    //             currentLayer + 1,
+    //             player,
+    //             metrics,
+    //             board.ROWS - row);
 
-            addChild(child);
-            copy.setCell(row, column, Player::EMPTY);
+    //         addChild(child);
+    //         copy.setCell(row, column, Player::EMPTY);
 
-            if (child->metrics.winningMove)
-            {
-                hasWin = true;
-                break;
-            }
-        }
-        if (hasWin)
-        {
-            for (auto it = children.begin(); it != children.end();)
-            {
-                if (!(*it)->metrics.winningMove)
-                {
-                    delete *it;
-                    it = children.erase(it);
-                }
-                else
-                {
-                    ++it;
-                }
-            }
-        }
-        for (TreeNode *child : children)
-        {
-            Connect4Board nextBoard = board;
-            nextBoard.dropDisc(child->move, player);
-            child->addLayer(
-                nextBoard,
-                depth - 1,
-                child->level);
-        }
+    //         if (child->metrics.winningMove)
+    //         {
+    //             hasWin = true;
+    //             break;
+    //         }
+    //     }
+    //     if (hasWin)
+    //     {
+    //         for (auto it = children.begin(); it != children.end();)
+    //         {
+    //             if (!(*it)->metrics.winningMove)
+    //             {
+    //                 delete *it;
+    //                 it = children.erase(it);
+    //             }
+    //             else
+    //             {
+    //                 ++it;
+    //             }
+    //         }
+    //     }
+    //     for (TreeNode *child : children)
+    //     {
+    //         Connect4Board nextBoard = board;
+    //         nextBoard.dropDisc(child->move, player);
+    //         child->addLayer(
+    //             nextBoard,
+    //             depth - 1,
+    //             child->level);
+    //     }
 
-        return true;
-    }
+    //     return true;
+    // }
 
-    /**
-     * Grow the node by adding layers to it.
-     * If this node is a leaf, it will expand "levels" deeper layers.
-     * If it has children, it will recurse on its children untill it reaches the leaf nodes.
-     * @param board The current state of the game board.
-     * @param levels The number of levels to grow.
-     * @param currentLevel The current level of this node in the tree.
-     */
-    void growNode(
-        Connect4Board &board,
-        int levels,
-        int currentLevel)
-    {
-        if (children.empty())
-        {
-            addLayer(board, levels, currentLevel);
-        }
-        else
-        {
-            for (TreeNode *child : children)
-            {
-                Connect4Board childBoard = board;
-                childBoard.dropDisc(child->move, owner);
+    // /**
+    //  * Grow the node by adding layers to it.
+    //  * If this node is a leaf, it will expand "levels" deeper layers.
+    //  * If it has children, it will recurse on its children untill it reaches the leaf nodes.
+    //  * @param board The current state of the game board.
+    //  * @param levels The number of levels to grow.
+    //  * @param currentLevel The current level of this node in the tree.
+    //  */
+    // void growNode(
+    //     Connect4Board &board,
+    //     int levels,
+    //     int currentLevel)
+    // {
+    //     if (children.empty())
+    //     {
+    //         addLayer(board, levels, currentLevel);
+    //     }
+    //     else
+    //     {
+    //         for (TreeNode *child : children)
+    //         {
+    //             Connect4Board childBoard = board;
+    //             childBoard.dropDisc(child->move, owner);
 
-                child->growNode(
-                    childBoard,
-                    levels,
-                    child->level);
-            }
-        }
-    }
+    //             child->growNode(
+    //                 childBoard,
+    //                 levels,
+    //                 child->level);
+    //         }
+    //     }
+    // }
 
     /**
      * Remove a child node from this node.
@@ -396,6 +368,7 @@ public:
             }
         }
     }
+
     /**
      * Remove a branch from the tree based on the specified column.
      * This will delete the subtree rooted at the child node that matches the column.
@@ -418,13 +391,10 @@ inline void deleteSubtree(TreeNode *node)
     {
         return;
     }
-    // if (!node->children.empty())
-    // {
     for (TreeNode *child : node->children)
     {
         deleteSubtree(child);
     }
-    // }
     node->children.clear();
     delete node;
 }
@@ -462,7 +432,7 @@ public:
 
     /**
      * Export the tree structure to a Graphviz DOT file.
-     * @param filename The name of the output DOT file.
+     * @param filename The name of the output DOT file, default is "tree.dot".
      */
     void toDot(const string &filename = "tree.dot") const
     {
@@ -487,9 +457,10 @@ public:
      * @param root Whether this is the root node.
      * @return The DOT representation of the subtree.
      */
-    string dfs(const TreeNode *node, bool root) const
+    string dfs(const TreeNode *node, bool root = false) const
     {
 
+        bool displayMetrics = true; // Set to false to disable metrics display
         string color;
         switch (node->owner)
         {
@@ -523,15 +494,21 @@ public:
         }
         else
         {
-            ofs += "  node" + to_string(node->id) + " [label=\"" + to_string(node->level) + ") " + Connect4Board::colToChar(node->move) + to_string(node->row) +
-                   " W=" + (node->metrics.winningMove ? "1" : "0") +
-                   " T=" + (node->metrics.immediateThreat ? "1" : "0") +
-                   " t=" + (node->metrics.minorThreat ? "1" : "0") +
-                   " p=" + to_string(node->metrics.pressure) +
-                   " w=" + to_string(node->metrics.winOptions) +
-                   "\", fillcolor=\"" + color + "\"];\n";
-            // ofs += "  node" + to_string(node->id) + " [label=\"" + to_string(node->level) + ") " + Connect4Board::colToChar(node->move) + to_string(node->row) + ": " +to_string(node->id) +
-            //        "\", fillcolor=\"" + color + "\"];\n";
+            if (displayMetrics)
+            {
+                ofs += "  node" + to_string(node->id) + " [label=\"" + to_string(node->level) + ") " + Connect4Board::colToChar(node->move) + to_string(node->row) +
+                       " W=" + (node->metrics.winningMove ? "1" : "0") +
+                       " T=" + (node->metrics.immediateThreat ? "1" : "0") +
+                       " t=" + (node->metrics.minorThreat ? "1" : "0") +
+                       " p=" + to_string(node->metrics.pressure) +
+                       " w=" + to_string(node->metrics.winOptions) +
+                       "\", fillcolor=\"" + color + "\"];\n";
+            }
+            else
+            {
+                ofs += "  node" + to_string(node->id) + " [label=\"" + to_string(node->level) + ") " + Connect4Board::colToChar(node->move) + to_string(node->row) + ": " + to_string(node->id) +
+                       "\", fillcolor=\"" + color + "\"];\n";
+            }
         }
         for (const TreeNode *child : node->children)
         {
@@ -682,7 +659,6 @@ public:
     {
         root->removeAllBranchesExcept(column);
 
-        // cout << "Moving root up to column: " << Connect4Board::colToChar(column) << endl;
         if (root->children.empty())
         {
             throw runtime_error("No children found for the current root. Cannot move root up.");

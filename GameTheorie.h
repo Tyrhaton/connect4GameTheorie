@@ -195,15 +195,11 @@ public:
         return bestMove;
     }
 
-    Column getBestMoveV2()
+    Column getBestMoveV2(Connect4Board board)
     {
         if (!tree)
         {
             throw runtime_error("Tree is not initialized.");
-        }
-        if (!board)
-        {
-            throw runtime_error("Board is not initialized.");
         }
 
         // Get the root node of the tree
@@ -214,6 +210,7 @@ public:
         }
 
         Tree copy = *tree;
+        vector<Column> possibleMoves = board.getPossibleMoves();
 
         // Prune the tree to the best move for the current player
         // copy.prune(player == PLAYER);

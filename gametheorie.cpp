@@ -9,7 +9,7 @@ int main()
     bool debug = true;
     bool run = true;
     bool letBotPlay = true; // if false, the user plays both players
-    int depth = 2; // depth of the game tree, higher values will take longer to compute
+    int depth = 2; // depth of the game tree, higher values will take longer to compute, depth 4 should compile fast enough, 5 or higher will be slow
 
     Connect4Board initBoard;
     Player startingPlayer = Player::PLAYER1; // PLAYER1 (user) or PLAYER2 (system)
@@ -17,12 +17,7 @@ int main()
 
     GameTheorie::Level level = GameTheorie::Level::EASY;
 
-    // initBoard.dropDisc(Column::D, startingPlayer);
-    // initBoard.dropDisc(Column::E, opponentPlayer);
-    // initBoard.dropDisc(Column::D, startingPlayer);
-    // initBoard.dropDisc(Column::E, opponentPlayer);
-
-    GameTheorie brain = GameTheorie(initBoard, startingPlayer, depth, level); // depth 4 should compile fast enough, 5 or higher will be slow
+    GameTheorie brain = GameTheorie(initBoard, startingPlayer, depth, level);
     Connect4Board board = brain.getBoard();
     Tree *tree = brain.tree;
 
@@ -31,30 +26,24 @@ int main()
     string move;
     while (run)
     {
-
-        //
-
-        vector<Column> moves = board.getPossibleMoves();
-        // children.clear();
-
-        // bool hasWin = false;
-
-        for (const Column &column : moves)
+        if (debug)
         {
+            vector<Column> moves = board.getPossibleMoves();
 
-            Connect4Board copy = board;
-            int row = copy.findRow(column);
-            if (row < 0)
+            for (const Column &column : moves)
             {
-                continue;
+
+                Connect4Board copy = board;
+                int row = copy.findRow(column);
+                if (row < 0)
+                {
+                    continue;
+                }
+                TileMetrics metrics = Metrics::generateMetricsForTile(copy, startingPlayer, row, column);
+
+                cout << "Metrics for column " << Connect4Board::colToChar(column) << to_string(board.ROWS - row) << ": " << "Pressure: " << metrics.pressure << " Win Options: " << metrics.winOptions << " Immediate Threat: " << (metrics.immediateThreat ? "Yes" : "No") << " Minor Threat: " << (metrics.minorThreat ? "Yes" : "No") << " Winning Move: " << (metrics.winningMove ? "Yes" : "No") << endl;
             }
-            TileMetrics metrics = Metrics::generateMetricsForTile(copy, startingPlayer, row, column);
-
-            // copy.setCell(row, column, startingPlayer);
-            cout << "Metrics for column " << Connect4Board::colToChar(column) << to_string(board.ROWS - row) << ": " << "Pressure: " << metrics.pressure << " Win Options: " << metrics.winOptions << " Immediate Threat: " << (metrics.immediateThreat ? "Yes" : "No") << " Minor Threat: " << (metrics.minorThreat ? "Yes" : "No") << " Winning Move: " << (metrics.winningMove ? "Yes" : "No") << endl;
         }
-
-        //
 
         cout << "Player1: Enter your move (A-G) or 'exit' to quit: " << endl;
         getline(cin, move);
@@ -78,26 +67,23 @@ int main()
 
         // player 2
         // Column bestMove = brain.getBestMove(board, opponentPlayer, level, debug);
-        Column bestMove = brain.getBestMoveV2();
+        Column bestMove = brain.getBestMoveV2(board);
 
-        vector<Column> moves2 = board.getPossibleMoves();
-        // children.clear();
-
-        // bool hasWin = false;
-
-        for (const Column &column : moves2)
+        if (debug)
         {
-
-            Connect4Board copy = board;
-            int row = copy.findRow(column);
-            if (row < 0)
+            vector<Column> moves2 = board.getPossibleMoves();
+            for (const Column &column : moves2)
             {
-                continue;
-            }
-            TileMetrics metrics = Metrics::generateMetricsForTile(copy, opponentPlayer, row, column);
+                Connect4Board copy = board;
+                int row = copy.findRow(column);
+                if (row < 0)
+                {
+                    continue;
+                }
+                TileMetrics metrics = Metrics::generateMetricsForTile(copy, opponentPlayer, row, column);
 
-            // copy.setCell(row, column, startingPlayer);
-            cout << "Metrics for column " << Connect4Board::colToChar(column) << to_string(board.ROWS - row) << ": " << "Pressure: " << metrics.pressure << " Win Options: " << metrics.winOptions << " Immediate Threat: " << (metrics.immediateThreat ? "Yes" : "No") << " Minor Threat: " << (metrics.minorThreat ? "Yes" : "No") << " Winning Move: " << (metrics.winningMove ? "Yes" : "No") << endl;
+                cout << "Metrics for column " << Connect4Board::colToChar(column) << to_string(board.ROWS - row) << ": " << "Pressure: " << metrics.pressure << " Win Options: " << metrics.winOptions << " Immediate Threat: " << (metrics.immediateThreat ? "Yes" : "No") << " Minor Threat: " << (metrics.minorThreat ? "Yes" : "No") << " Winning Move: " << (metrics.winningMove ? "Yes" : "No") << endl;
+            }
         }
 
         if (!letBotPlay)
