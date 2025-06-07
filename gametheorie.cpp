@@ -12,7 +12,7 @@ int main()
     int depth = 2;          // depth of the game tree, higher values will take longer to compute, depth 4 should compile fast enough, 5 or higher will be slow
 
     Connect4Board initBoard;
-    Player startingPlayer = Player::PLAYER1; // PLAYER1 (user) or PLAYER2 (system)
+    Player startingPlayer = Player::USER; // USER (user) or BOT (system)
     Player opponentPlayer = initBoard.getOponent(startingPlayer);
 
     GameTheorie::Level level = GameTheorie::Level::EASY;
@@ -25,7 +25,7 @@ int main()
     string move;
     while (run)
     {
-        cout << "Player1: Enter your move (A-G) or 'exit' to quit: " << endl;
+        cout << "User: Enter your move (A-G) or 'exit' to quit: " << endl;
         getline(cin, move);
         if (move == "exit" || move == "Exit" || move == "quit" || move == "q")
         {
@@ -36,11 +36,11 @@ int main()
 
         Column col = Connect4Board::charToColumn(move[0]);
 
-        bool player1Won = brain.playMove(col, startingPlayer);
+        bool userWon = brain.playMove(col, startingPlayer);
         brain.printBoard();
-        if (player1Won)
+        if (userWon)
         {
-            cout << "Player 1 won!" << endl;
+            cout << "User won!" << endl;
             break;
         }
 
@@ -49,18 +49,18 @@ int main()
 
         if (!letBotPlay)
         {
-            cout << "Best move for player 2: " << Connect4Board::colToChar(bestMove) << endl;
-            cout << "Player2: Enter your move (A-G) or 'exit' to quit: " << endl;
+            cout << "Best move for user: " << Connect4Board::colToChar(bestMove) << endl;
+            cout << "User: Enter your move (A-G) or 'exit' to quit: " << endl;
             getline(cin, move);
             bestMove = Connect4Board::charToColumn(move[0]);
         }
 
-        bool player2Won = brain.playMove(bestMove, opponentPlayer);
+        bool botWon = brain.playMove(bestMove, opponentPlayer);
 
         brain.printBoard();
-        if (player2Won)
+        if (botWon)
         {
-            cout << "Player 2 won!" << endl;
+            cout << "Bot won!" << endl;
             break;
         }
     }

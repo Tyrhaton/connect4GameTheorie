@@ -114,18 +114,38 @@ public:
 
     /**
      * Enumeration for the players in the game.
-     * EMPTY represents an empty cell, PLAYER1 and PLAYER2 represent the two players.
+     * EMPTY represents an empty cell, BOT and USER represent the two players.
      */
     enum Player
     {
         EMPTY = 0,
-        PLAYER1 = 1,
-        PLAYER2 = 2
+        BOT = 1,
+        USER = 2
     };
 
     /**
+     * Convert a Player enumeration to a character representation.
+     * @param player The Player enumeration.
+     * @return The corresponding character representation.
+     */
+    static string playerToChar(Player player)
+    {
+        switch (player)
+        {
+        case Player::EMPTY:
+            return string(1, '.');
+        case Player::BOT:
+            return string(1, 'X');
+        case Player::USER:
+            return string(1, 'O');
+        default:
+            throw invalid_argument("Invalid player");
+        }
+    }
+
+    /**
      * The grid representing the Connect 4 board.
-     * Each cell can be EMPTY, PLAYER1, or PLAYER2.
+     * Each cell can be EMPTY, BOT, or USER.
      */
     array<array<Player, COLS>, ROWS> grid;
 
@@ -156,9 +176,9 @@ public:
             for (int c = 0; c < COLS; ++c)
             {
                 char ch = EMPTYMARK;
-                if (grid[r][c] == PLAYER1)
+                if (grid[r][c] == BOT)
                     ch = PLAYER1MARK;
-                else if (grid[r][c] == PLAYER2)
+                else if (grid[r][c] == USER)
                     ch = PLAYER2MARK;
 
                 cout << ch << ' ';
@@ -235,7 +255,7 @@ public:
      */
     Player getOponent(Player player) const
     {
-        return (player == PLAYER1) ? PLAYER2 : PLAYER1;
+        return (player == BOT) ? USER : BOT;
     }
 
     /**
@@ -296,7 +316,7 @@ public:
             if (getCell(row, column) == Player::EMPTY)
                 return row;
         }
-        return -1; 
+        return -1;
     }
 
     /**

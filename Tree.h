@@ -415,8 +415,6 @@ public:
         root = new TreeNode(Column::A, "Root", 0, board.getOponent(startingPlayer));
 
         root->addLayer(board, depth, 0);
-
-        toDot("tree.dot");
     }
 
     /**
@@ -464,10 +462,10 @@ public:
         string color;
         switch (node->owner)
         {
-        case Player::PLAYER1:
+        case Player::BOT:
             color = "lightblue";
             break;
-        case Player::PLAYER2:
+        case Player::USER:
             color = "lightcoral";
             break;
         default:

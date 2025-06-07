@@ -20,13 +20,15 @@ public:
     /**
      * Pointer to the Connect4Board instance
      */
-    Connect4Board *board = nullptr;
+    Connect4Board *BOARD = nullptr;
 
     /**
      * The current player
      */
-    Player PLAYER = Player::EMPTY;
-    Player OPPONENT = Player::EMPTY;
+    Player PLAYER = Player::BOT;   // The Player who we are the brains for
+    Player OPPONENT = Player::USER; // The enemy
+
+    Player STARTINGPLAYER = Player::EMPTY; // The player who starts the game
 
     /**
      * Enumeration for the difficulty levels of the game theory AI
@@ -47,18 +49,18 @@ public:
      * MEDIUM: More advanced heuristics
      * HARD: Full tree search with pruning
      */
-    Level level = Level::EASY;
+    Level LEVEL = Level::EASY;
 
     /**
      * Default constructor for GameTheorie
      * Initializes the game theory with a default board and players
      */
-    GameTheorie(Connect4Board &board, Player startingPlayer = Player::PLAYER1,
+    GameTheorie(Connect4Board &board, Player startingPlayer = Player::BOT
+,
                 int depth = 2, Level level = Level::EASY)
-        : PLAYER(startingPlayer), OPPONENT(board.getOponent(startingPlayer)), level(level)
+        : STARTINGPLAYER(startingPlayer), LEVEL(level)
     {
-        (void)depth; // Unused parameter
-        this->board = &board;
+        BOARD = &board;
         tree = new Tree(board, startingPlayer, depth);
         tree->toDot();
         tree->dotToSvg();
@@ -67,12 +69,12 @@ public:
     /**
      * Play a move in the specified column for the given player and update the game tree
      * @param column The column to play in
-     * @param player The player making the move, default is PLAYER1
+     * @param player The player making the move, default is BOT
      * @return true if the player won, false otherwise
      */
-    bool playMove(Column column, Player player = Player::PLAYER1)
+    bool playMove(Column column, Player player = Player::BOT)
     {
-        if (!board)
+        if (!BOARD)
         {
             throw runtime_error("Board is not initialized.");
         }
@@ -80,13 +82,13 @@ public:
         {
             throw invalid_argument("Invalid column: " + to_string(column));
         }
-        cout << "Player " << (player == Player::PLAYER1 ? "1" : "2") << " plays in column: " << Connect4Board::colToChar(column) << endl;
-        bool playerWon = board->dropDisc(column, player);
+        cout << "Player " << (player == Player::BOT ? "1" : "2") << " plays in column: " << Connect4Board::colToChar(column) << endl;
+        bool playerWon = BOARD->dropDisc(column, player);
         // if (!playerWon)
         // {
         //     throw runtime_error("Invalid move: " + Connect4Board::colToChar(column));
         // }
-        tree->updateTree(*board, column);
+        tree->updateTree(*BOARD, column);
         return playerWon;
     }
 
@@ -95,11 +97,11 @@ public:
      */
     void printBoard()
     {
-        if (!board)
+        if (!BOARD)
         {
             throw runtime_error("Board is not initialized.");
         }
-        board->print();
+        BOARD->print();
     }
 
     /**
@@ -118,11 +120,13 @@ public:
     {
         if (level == EASY)
         {
-            return getBestMoveEasy(*board, player, debug);
+
+            return getBestMoveEasy(player, debug);
         }
         else if (level == MEDIUM)
         {
-            return getBestMoveMedium(*board);
+            // fetches the best move based on the current tree
+            return getBestMoveMedium();
         }
         else if (level == HARD)
         {
@@ -136,23 +140,23 @@ public:
     }
 
     /**
-     * Get the best move for the current player
-     * @param board The current state of the board
+     * Get the best move for the current player with Level = Easy
      * @param player The current player
+     * @param debug if there should be extra output to help debugging
      * @return The best move as a Column
      */
-    Column getBestMoveEasy(Connect4Board board, Player player, bool debug = false)
+    Column getBestMoveEasy(Player player, bool debug = false)
     {
-        vector<Column> possibleMoves = board.getPossibleMoves();
+        vector<Column> possibleMoves = BOARD->getPossibleMoves();
         if (possibleMoves.empty())
         {
             throw runtime_error("No possible moves available.");
         }
-        vector<int> pressure = Metrics::countPressureSum(board, player);
-        vector<int> winOptions = Metrics::countWinOptions(board, player);
-        vector<bool> threats = Metrics::computeImmediateThreats(board, player);
-        vector<bool> minorThreats = Metrics::computeMinorThreats(board, player);
-        vector<bool> winMoves = Metrics::computeWinningMoves(board, player);
+        vector<int> pressure = Metrics::countPressureSum(*BOARD, player);
+        vector<int> winOptions = Metrics::countWinOptions(*BOARD, player);
+        vector<bool> threats = Metrics::computeImmediateThreats(*BOARD, player);
+        vector<bool> minorThreats = Metrics::computeMinorThreats(*BOARD, player);
+        vector<bool> winMoves = Metrics::computeWinningMoves(*BOARD, player);
 
         if (debug)
         {
@@ -265,7 +269,12 @@ public:
         return bestMove;
     }
 
-    Column getBestMoveMedium(Connect4Board board)
+    /**
+     * Get the best move for the current player with Level = Medium
+     * @param debug if there should be extra output to help debugging
+     * @return The best move as a Column
+     */
+    Column getBestMoveMedium(bool debug = false)
     {
         if (!tree)
         {
@@ -280,7 +289,7 @@ public:
         }
 
         Tree copy = *tree;
-        vector<Column> possibleMoves = board.getPossibleMoves();
+        vector<Column> possibleMoves = BOARD->getPossibleMoves();
 
         // Prune the tree to the best move for the current player
         // copy.prune(player == PLAYER);
@@ -289,7 +298,7 @@ public:
         int bestWinOptions = -1;
         Column threatTile = Column::INVALID;
         Column minorThreatTile = Column::INVALID;
-        Column bestMove = copy.root->children.front()->move;
+        Column bestMove = possibleMoves.front();
 
         for (auto child : copy.root->children)
         {
@@ -357,7 +366,7 @@ public:
      */
     void setBoard(Connect4Board &newBoard)
     {
-        board = &newBoard;
+        BOARD = &newBoard;
     }
 
     /**
@@ -376,6 +385,11 @@ public:
     void setOpponent(Player opponent)
     {
         OPPONENT = opponent;
+    }
+
+    void setStartingPlayer(Player player)
+    {
+        STARTINGPLAYER = player;
     }
 
     /**
@@ -397,12 +411,21 @@ public:
     }
 
     /**
+     * Get the starting player
+     * @return The starting player
+     */
+    Player getStartingPlayer() const
+    {
+        return STARTINGPLAYER;
+    }
+
+    /**
      * Get the current board
      * @return The Connect4Board instance
      */
     Connect4Board &getBoard() const
     {
-        return *board;
+        return *BOARD;
     }
 
     /**
