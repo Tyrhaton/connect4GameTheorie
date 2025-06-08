@@ -8,8 +8,8 @@ int main()
     // Config
     bool debug = false;
     bool run = true;
-    bool letBotPlay = true; // if false, the user plays both players
-    int depth = 2;          // depth of the game tree, higher values will take longer to compute, depth 4 should compile fast enough, 5 or higher will be slow
+    bool letBotPlay = false; // if false, the user plays both players
+    int depth = 2;           // depth of the game tree, higher values will take longer to compute, depth 4 should compile fast enough, 5 or higher will be slow
 
     Connect4Board initBoard;
     Player startingPlayer = Player::USER; // USER (user) or BOT (system)
@@ -25,43 +25,88 @@ int main()
     string move;
     while (run)
     {
-        cout << "User: Enter your move (A-G) or 'exit' to quit: " << endl;
-        getline(cin, move);
-        if (move == "exit" || move == "Exit" || move == "quit" || move == "q")
+        if (startingPlayer == Player::USER)
         {
-            run = false;
-            break;
-        }
-        // player 1
-
-        Column col = Connect4Board::charToColumn(move[0]);
-
-        bool userWon = brain.playMove(col, startingPlayer);
-        brain.printBoard();
-        if (userWon)
-        {
-            cout << "User won!" << endl;
-            break;
-        }
-
-        // player 2
-        Column bestMove = brain.getBestMove(opponentPlayer);
-
-        if (!letBotPlay)
-        {
-            cout << "Best move for user: " << Connect4Board::colToChar(bestMove) << endl;
             cout << "User: Enter your move (A-G) or 'exit' to quit: " << endl;
             getline(cin, move);
-            bestMove = Connect4Board::charToColumn(move[0]);
+            if (move == "exit" || move == "Exit" || move == "quit" || move == "q")
+            {
+                run = false;
+                break;
+            }
+            // player 1
+
+            Column col = Connect4Board::charToColumn(move[0]);
+
+            bool userWon = brain.playMove(col, startingPlayer);
+            brain.printBoard();
+            if (userWon)
+            {
+                cout << "User won!" << endl;
+                break;
+            }
+
+            // player 2
+            Column bestMove = brain.getBestMove();
+
+            if (!letBotPlay)
+            {
+                cout << "Best move for user: " << Connect4Board::colToChar(bestMove) << endl;
+                cout << "User: Enter your move (A-G) or 'exit' to quit: " << endl;
+                getline(cin, move);
+                bestMove = Connect4Board::charToColumn(move[0]);
+            }
+
+            bool botWon = brain.playMove(bestMove, opponentPlayer);
+
+            brain.printBoard();
+            if (botWon)
+            {
+                cout << "Bot won!" << endl;
+                break;
+            }
         }
-
-        bool botWon = brain.playMove(bestMove, opponentPlayer);
-
-        brain.printBoard();
-        if (botWon)
+        else
         {
-            cout << "Bot won!" << endl;
-            break;
+
+            // player 2
+            Column bestMove = brain.getBestMove();
+
+            if (!letBotPlay)
+            {
+                cout << "Best move for user: " << Connect4Board::colToChar(bestMove) << endl;
+                cout << "User: Enter your move (A-G) or 'exit' to quit: " << endl;
+                getline(cin, move);
+                bestMove = Connect4Board::charToColumn(move[0]);
+            }
+
+            bool botWon = brain.playMove(bestMove, opponentPlayer);
+
+            brain.printBoard();
+            if (botWon)
+            {
+                cout << "Bot won!" << endl;
+                break;
+            }
+
+            cout << "User: Enter your move (A-G) or 'exit' to quit: " << endl;
+            getline(cin, move);
+            if (move == "exit" || move == "Exit" || move == "quit" || move == "q")
+            {
+                run = false;
+                break;
+            }
+            // player 1
+
+            Column col = Connect4Board::charToColumn(move[0]);
+
+            bool userWon = brain.playMove(col, startingPlayer);
+            brain.printBoard();
+            if (userWon)
+            {
+                cout << "User won!" << endl;
+                break;
+            }
         }
     }
     cout << "Game over!" << endl;

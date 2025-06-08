@@ -75,7 +75,7 @@ public:
         Player player = board.getOponent(owner);
         Player opponent = owner;
 
-        if (depth <= 0 || board.full())
+        if (depth <= 0 || board.full() || metrics.winningMove)
         {
             return true;
         }
@@ -100,26 +100,28 @@ public:
         for (Column column : moves)
         {
             int r_play = board.findRow(column);
+            // cout << r_play << " " << column << endl;
             if (r_play < 0)
             {
                 continue;
             }
             TileMetrics tm = Metrics::generateMetricsForTile(board, player, r_play, column);
 
+            board.setCell(r_play, column, player);
+
             bool oppCanWin = false;
-            {
-                vector<Column> replyMoves = board.getPossibleMoves();
-                for (Column oppCol : replyMoves)
-                {
-                    Connect4Board replyBoard = board;
-                    replyBoard.dropDisc(oppCol, opponent);
-                    if (replyBoard.checkWin(opponent))
-                    {
-                        oppCanWin = true;
-                        break;
-                    }
-                }
-            }
+
+            // vector<Column> replyMoves = board.getPossibleMoves();
+            // for (Column oppCol : replyMoves)
+            // {
+            //     Connect4Board replyBoard = board;
+            //     replyBoard.dropDisc(oppCol, opponent);
+            //     if (replyBoard.checkWin(opponent))
+            //     {
+            //         oppCanWin = true;
+            //         break;
+            //     }
+            // }
 
             if (oppCanWin)
             {
@@ -136,27 +138,33 @@ public:
                 board.ROWS - r_play);
             children.push_back(child);
 
+            // if (!tm.winningMove)
+            // {
             child->addLayer(board, depth - 1, child->level);
+            // }
             board.setCell(r_play, column, Player::EMPTY);
 
-            if (tm.winningMove)
+            if (tm.winningMove && player == Player::BOT)
             {
                 hasWin = true;
                 break;
             }
         }
 
-        if (hasWin)
+        if (hasWin && player == Player::BOT)
         {
             for (auto it = children.begin(); it != children.end();)
             {
+                cout << "Checking child " << (*it)->label << " for winning move." << endl;
                 if (!(*it)->metrics.winningMove)
                 {
+                    cout << "Deleting child " << (*it)->label << " because it is not a winning move." << endl;
                     deleteSubtree(*it);
                     it = children.erase(it);
                 }
                 else
                 {
+                    // cout << "Keeping child " << (*it)->label << " because it is a winning move." << endl;
                     ++it;
                 }
             }
@@ -463,10 +471,10 @@ public:
         switch (node->owner)
         {
         case Player::BOT:
-            color = "lightblue";
+            color = "lightcoral";
             break;
         case Player::USER:
-            color = "lightcoral";
+            color = "lightblue";
             break;
         default:
             color = "white";
@@ -677,11 +685,15 @@ public:
      * @param board The current state of the Connect 4 board.
      * @param column The column to keep as the new root.
      */
-    void updateTree(Connect4Board &board, Column column)
+    void updateTree(Connect4Board &board, Column column, bool debug = false)
     {
         if (!root)
         {
             throw runtime_error("Tree root is not initialized.");
+        }
+        if (true || debug)
+        {
+            cout << "Updating tree with root: " << Connect4Board::colToChar(column) << endl;
         }
         moveRootUp(column);
         grow(board, 2);

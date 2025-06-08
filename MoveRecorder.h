@@ -40,7 +40,7 @@ public:
             const Move &m = history[i];
             char colChar = static_cast<char>('A' + static_cast<int>(m.column));
             cout << "Move " << (i + 1) << ": Player "
-                 << (m.player == Player::PLAYER1 ? "1" : "2")
+                 << (m.player == Player::USER ? "U" : "B")
                  << " -> " << colChar << "\n";
         }
     }

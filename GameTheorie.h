@@ -25,10 +25,11 @@ public:
     /**
      * The current player
      */
-    Player PLAYER = Player::BOT;   // The Player who we are the brains for
+    Player PLAYER = Player::BOT;    // The Player who we are the brains for
     Player OPPONENT = Player::USER; // The enemy
 
     Player STARTINGPLAYER = Player::EMPTY; // The player who starts the game
+    Player CURRENTPLAYER = Player::EMPTY;  // The player who is currently playing
 
     /**
      * Enumeration for the difficulty levels of the game theory AI
@@ -55,10 +56,9 @@ public:
      * Default constructor for GameTheorie
      * Initializes the game theory with a default board and players
      */
-    GameTheorie(Connect4Board &board, Player startingPlayer = Player::BOT
-,
+    GameTheorie(Connect4Board &board, Player startingPlayer = Player::BOT,
                 int depth = 2, Level level = Level::EASY)
-        : STARTINGPLAYER(startingPlayer), LEVEL(level)
+        : STARTINGPLAYER(startingPlayer), CURRENTPLAYER(startingPlayer), LEVEL(level)
     {
         BOARD = &board;
         tree = new Tree(board, startingPlayer, depth);
@@ -69,10 +69,10 @@ public:
     /**
      * Play a move in the specified column for the given player and update the game tree
      * @param column The column to play in
-     * @param player The player making the move, default is BOT
+     * @param player The player making the move
      * @return true if the player won, false otherwise
      */
-    bool playMove(Column column, Player player = Player::BOT)
+    bool playMove(Column column, Player player)
     {
         if (!BOARD)
         {
@@ -82,13 +82,12 @@ public:
         {
             throw invalid_argument("Invalid column: " + to_string(column));
         }
-        cout << "Player " << (player == Player::BOT ? "1" : "2") << " plays in column: " << Connect4Board::colToChar(column) << endl;
+        // cout << "Player " << (player == Player::BOT ? "1" : "2") << " plays in column: " << Connect4Board::colToChar(column) << endl;
         bool playerWon = BOARD->dropDisc(column, player);
-        // if (!playerWon)
-        // {
-        //     throw runtime_error("Invalid move: " + Connect4Board::colToChar(column));
-        // }
+
         tree->updateTree(*BOARD, column);
+
+        setCurrentPlayer(BOARD->getOponent(player));
         return playerWon;
     }
 
@@ -116,12 +115,12 @@ public:
         tree->print();
     }
 
-    Column getBestMove(Player player, GameTheorie::Level level = MEDIUM, bool debug = false)
+    Column getBestMove(GameTheorie::Level level = MEDIUM, bool debug = false)
     {
         if (level == EASY)
         {
 
-            return getBestMoveEasy(player, debug);
+            return getBestMoveEasy(debug);
         }
         else if (level == MEDIUM)
         {
@@ -145,8 +144,9 @@ public:
      * @param debug if there should be extra output to help debugging
      * @return The best move as a Column
      */
-    Column getBestMoveEasy(Player player, bool debug = false)
+    Column getBestMoveEasy(bool debug = false)
     {
+        Player player = CURRENTPLAYER;
         vector<Column> possibleMoves = BOARD->getPossibleMoves();
         if (possibleMoves.empty())
         {
@@ -302,14 +302,17 @@ public:
 
         for (auto child : copy.root->children)
         {
-            // cout << "Child: " << Connect4Board::colToChar(child->move) << to_string(child->row)
-            //      << " Owner: " << (child->owner == 1 ? "Player 1" : "Player 2")
-            //      << " Win: " << (child->metrics.winningMove ? "True" : "False")
-            //      << " Threat: " << (child->metrics.immediateThreat ? "True" : "False")
-            //      << " Minor Threat: " << (child->metrics.minorThreat ? "True" : "False")
-            //      << " Win Options: " << child->metrics.winOptions
-            //      << " Pressure: " << child->metrics.pressure
-            //      << endl;
+            if (debug)
+            {
+                cout << "Child: " << Connect4Board::colToChar(child->move) << to_string(child->row)
+                     << " Owner: " << (child->owner == 1 ? "Player 1" : "Player 2")
+                     << " Win: " << (child->metrics.winningMove ? "True" : "False")
+                     << " Threat: " << (child->metrics.immediateThreat ? "True" : "False")
+                     << " Minor Threat: " << (child->metrics.minorThreat ? "True" : "False")
+                     << " Win Options: " << child->metrics.winOptions
+                     << " Pressure: " << child->metrics.pressure
+                     << endl;
+            }
 
             if (child->metrics.winningMove)
             {
@@ -387,9 +390,22 @@ public:
         OPPONENT = opponent;
     }
 
+    /**
+     * Set the starting player for this game theory instance
+     * @param player The starting player to set
+     */
     void setStartingPlayer(Player player)
     {
         STARTINGPLAYER = player;
+    }
+
+    /**
+     * Set the current player for this game theory instance
+     * @param player The current player to set
+     */
+    void setCurrentPlayer(Player player)
+    {
+        CURRENTPLAYER = player;
     }
 
     /**

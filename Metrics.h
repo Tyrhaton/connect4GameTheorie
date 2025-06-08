@@ -495,70 +495,80 @@ public:
                                    int column)
     {
         Player opponent = board.getOponent(player);
+
+        // Must be in-board and empty
         if (!board.inBoard(r_play, column) ||
             board.getCell(r_play, column) != Player::EMPTY)
         {
             return false;
         }
 
-        bool isMinor = false;
-        for (int dir = 0; dir < 4 && !isMinor; ++dir)
+        // Four directions: horizontal, vertical, diag↗, diag↘
+        static const int dr4[4] = {0, 1, 1, 1};
+        static const int dc4[4] = {1, 0, 1, -1};
+
+        // Slide a length-4 window so that one of its empties is at (r_play, column)
+        for (int dir = 0; dir < 4; ++dir)
         {
-            for (int off = 0; off < 4 && !isMinor; ++off)
+            for (int off = 0; off < 4; ++off)
             {
                 int sr = r_play - dr4[dir] * off;
                 int sc = column - dc4[dir] * off;
 
-                int countOp = 0, countEmp = 0, countMe = 0;
+                // We will check the 4 cells (sr + k·dr, sc + k·dc) for k=0..3
                 bool covers = false;
+                int coverIndex = -1;
+                int oppCount = 0;
+                bool windowOK = true;
+
+                // First pass: validate window and record where (r_play,column) sits
                 for (int k = 0; k < 4; ++k)
                 {
                     int rr = sr + dr4[dir] * k;
                     int cc = sc + dc4[dir] * k;
                     if (!board.inBoard(rr, cc))
                     {
-                        countMe = 1;
+                        windowOK = false;
                         break;
                     }
                     Player cell = board.getCell(rr, cc);
                     if (rr == r_play && cc == column)
                     {
                         covers = true;
-                        ++countEmp;
+                        coverIndex = k;
                     }
-                    else if (cell == Player::EMPTY)
+                    if (cell == opponent)
                     {
-                        ++countEmp;
+                        ++oppCount;
                     }
-                    else if (cell == opponent)
+                    else if (cell != Player::EMPTY)
                     {
-                        ++countOp;
-                    }
-                    else
-                    {
-                        ++countMe;
+                        // it’s “me” (or some other invalid mark)
+                        windowOK = false;
+                        break;
                     }
                 }
-                if (covers && countOp == 2 && countMe == 0 && countEmp == 2)
+                if (!windowOK || !covers || oppCount != 2)
                 {
-                    isMinor = true;
+                    continue;
+                }
+
+                // Now check pattern: opp at indices 1 & 2, empties at 0 & 3:
+                //   [0] EMPTY, [1] OPP, [2] OPP, [3] EMPTY
+                int r1 = sr + dr4[dir] * 1, c1 = sc + dc4[dir] * 1;
+                int r2 = sr + dr4[dir] * 2, c2 = sc + dc4[dir] * 2;
+                if (board.getCell(r1, c1) == opponent &&
+                    board.getCell(r2, c2) == opponent)
+                {
+                    // Finally, your spot must be at one of the empty *ends* (index 0 or 3)
+                    if (coverIndex == 0 || coverIndex == 3)
+                    {
+                        return true;
+                    }
                 }
             }
-        }
-        if (!isMinor)
-        {
-            return false;
         }
 
-        for (int k = 0; k < 8; ++k)
-        {
-            int rr = r_play + dr8[k];
-            int cc = column + dc8[k];
-            if (board.inBoard(rr, cc) && board.getCell(rr, cc) == opponent)
-            {
-                return true;
-            }
-        }
         return false;
     }
 
