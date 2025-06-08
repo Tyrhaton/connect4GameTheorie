@@ -12,7 +12,7 @@ int main()
     int depth = 2;           // depth of the game tree, higher values will take longer to compute, depth 4 should compile fast enough, 5 or higher will be slow
 
     Connect4Board initBoard;
-    Player startingPlayer = Player::USER; // USER (user) or BOT (system)
+    Player startingPlayer = Player::BOT; // USER (user) or BOT (system)
     Player opponentPlayer = initBoard.getOponent(startingPlayer);
 
     GameTheorie::Level level = GameTheorie::Level::EASY;
@@ -52,7 +52,7 @@ int main()
             if (!letBotPlay)
             {
                 cout << "Best move for user: " << Connect4Board::colToChar(bestMove) << endl;
-                cout << "User: Enter your move (A-G) or 'exit' to quit: " << endl;
+                cout << "Bot: Enter your move (A-G) or 'exit' to quit: " << endl;
                 getline(cin, move);
                 bestMove = Connect4Board::charToColumn(move[0]);
             }
@@ -75,7 +75,7 @@ int main()
             if (!letBotPlay)
             {
                 cout << "Best move for user: " << Connect4Board::colToChar(bestMove) << endl;
-                cout << "User: Enter your move (A-G) or 'exit' to quit: " << endl;
+                cout << "Bot: Enter your move (A-G) or 'exit' to quit: " << endl;
                 getline(cin, move);
                 bestMove = Connect4Board::charToColumn(move[0]);
             }
