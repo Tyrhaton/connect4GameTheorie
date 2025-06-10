@@ -32,7 +32,7 @@ public:
     Player CURRENTPLAYER = Player::EMPTY;  // The player who is currently playing
 
     /**
-     * Enumeration for the difficulty levels of the game theory AI
+     * Enumeration for the difficulty levels of the game theory algorithm.
      * EASY: Basic heuristics
      * MEDIUM: More advanced heuristics
      * HARD: Full tree search with pruning
@@ -45,7 +45,7 @@ public:
     };
 
     /**
-     * The level of the game theory AI
+     * The level of the game theory algorithm
      * EASY: Basic heuristics
      * MEDIUM: More advanced heuristics
      * HARD: Full tree search with pruning
@@ -72,7 +72,7 @@ public:
      * @param player The player making the move
      * @return true if the player won, false otherwise
      */
-    bool playMove(Column column, Player player)
+    bool playMove(Column column, Player player, bool debug = false)
     {
         if (!BOARD)
         {
@@ -82,7 +82,10 @@ public:
         {
             throw invalid_argument("Invalid column: " + to_string(column));
         }
-        // cout << "Player " << (player == Player::BOT ? "1" : "2") << " plays in column: " << Connect4Board::colToChar(column) << endl;
+        if (debug)
+        {
+            cout << "Player " << (player == Player::BOT ? "Bot" : "User") << " plays in column: " << Connect4Board::colToChar(column) << endl;
+        }
         bool playerWon = BOARD->dropDisc(column, player);
 
         tree->updateTree(*BOARD, column);
@@ -115,6 +118,12 @@ public:
         tree->print();
     }
 
+    /**
+     * Get the best move for the current player with the specified difficulty level
+     * @param level The difficulty level
+     * @param debug If true, enables debug output
+     * @return The best move as a Column
+     */
     Column getBestMove(GameTheorie::Level level = MEDIUM, bool debug = false)
     {
         if (level == EASY)
@@ -124,12 +133,10 @@ public:
         }
         else if (level == MEDIUM)
         {
-            // fetches the best move based on the current tree
-            return getBestMoveMedium();
+            return getBestMoveMedium(debug);
         }
         else if (level == HARD)
         {
-            // Implement hard level logic here
             throw runtime_error("Hard level not implemented yet.");
         }
         else
@@ -281,7 +288,6 @@ public:
             throw runtime_error("Tree is not initialized.");
         }
 
-        // Get the root node of the tree
         TreeNode *root = tree->root;
         if (!root)
         {
@@ -290,9 +296,6 @@ public:
 
         Tree copy = *tree;
         vector<Column> possibleMoves = BOARD->getPossibleMoves();
-
-        // Prune the tree to the best move for the current player
-        // copy.prune(player == PLAYER);
 
         int bestPressure = -1;
         int bestWinOptions = -1;
@@ -350,6 +353,7 @@ public:
                     bestMove = child->move;
                 }
             }
+            // TO DO: implement odd even strategy?
         }
         if (threatTile != Column::INVALID)
         {
