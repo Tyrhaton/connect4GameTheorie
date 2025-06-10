@@ -225,9 +225,10 @@ public:
      */
     Player getCell(int row, int col) const
     {
-        if (!inBoard(row, col))
+        if (!inBoard(row, col, true))
         {
-            throw out_of_range("Row or column index out of range");
+            cout << "Connect4Board::getCell: Row or column index out of range" << endl;
+            // throw out_of_range("Connect4Board::getCell: Row or column index out of range");
         }
         return grid[row][col];
     }
@@ -241,7 +242,7 @@ public:
     void setCell(int row, int column, Player val)
     {
         // optionele bound-checks:
-        if (!inBoard(row, column))
+        if (!inBoard(row, column, true))
         {
             throw out_of_range("Connect4Board::setCell: index out of range");
         }
@@ -299,8 +300,19 @@ public:
      * @param c The column index.
      * @return True if the indices are within bounds, false otherwise.
      */
-    bool inBoard(int r, int c) const
+    bool inBoard(int r, int c, bool debug = false) const
     {
+        if (debug)
+        {
+            if (r < 0 || r >= ROWS)
+            {
+                cerr << "Row index out of bounds: " << r << endl;
+            }
+            if (c < 0 || c >= COLS)
+            {
+                cerr << "Column index out of bounds: " << c << endl;
+            }
+        }
         return r >= 0 && r < ROWS && c >= 0 && c < COLS;
     }
 

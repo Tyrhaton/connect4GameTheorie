@@ -9,6 +9,8 @@ struct TileMetrics
     bool immediateThreat;
     bool minorThreat;
     bool winningMove;
+    int preferredWinningRow;
+    bool enablesOpponentThreat;
 };
 
 class Metrics
@@ -584,6 +586,131 @@ public:
         return copy.checkWin(player);
     }
 
+    static int getTilePreferredWinningRow(const Connect4Board &board, int row, Column col, Player player)
+    {
+        const int DIRECTIONS[4][2] = {
+            {0, 1}, // horizontal
+            {1, 0}, // vertical
+            {1, 1}, // diagonal down-right
+            {1, -1} // diagonal down-left
+        };
+
+        const int requiredToWin = 4;
+
+        for (int d = 0; d < 4; ++d)
+        {
+            int dr = DIRECTIONS[d][0];
+            int dc = DIRECTIONS[d][1];
+
+            int count = 1; // include current tile
+            vector<pair<int, int>> positions;
+
+            // Check in the negative direction
+            for (int i = 0; i < requiredToWin; ++i)
+            {
+                int r = row - dr * i;
+                // cout << "row: " << row << ", r: " << r << endl;
+                int c = col - dc * i;
+                if (!board.inBoard(r, c))
+                {
+                    break;
+                }
+                Player cell = board.getCell(r, c);
+                if (cell == player)
+                {
+                    count++;
+                }
+                else if (cell == Player::EMPTY)
+                {
+                    positions.push_back({r, c});
+                    break;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            // Check in the positive direction
+            for (int i = 0; i < requiredToWin; ++i)
+            {
+                int r = row + dr * i;
+                int c = col + dc * i;
+                if (!board.inBoard(r, c))
+                {
+                    break;
+                }
+                Player cell = board.getCell(r, c);
+                if (cell == player)
+                {
+                    count++;
+                }
+                else if (cell == Player::EMPTY)
+                {
+                    positions.push_back({r, c});
+                    break;
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            // If we have 3 of our own and at least one open tile in line
+            if (count == 3)
+            {
+                for (auto &pos : positions)
+                {
+                    int r = pos.first;
+                    int c = pos.second;
+
+                    if (board.getCell(r + 1, c) != Player::EMPTY || r == board.ROWS - 1)
+                    {
+                        return r;
+                    }
+                }
+            }
+        }
+
+        return -1;
+    }
+
+    static bool getTileEnablesOpponentThreat(const Connect4Board &board, Column move, Player botPlayer)
+    {
+        Player opponent = board.getOponent(botPlayer);
+        Connect4Board simBoard = board;
+
+        int row = simBoard.findRow(move);
+        if (row < 0)
+        {
+            return false;
+        }
+
+        // Simulate the bot making the move
+        simBoard.setCell(row, move, botPlayer);
+
+        // Check if opponent now has access to a strong threat
+        vector<Column> replyMoves = simBoard.getPossibleMoves();
+        for (Column reply : replyMoves)
+        {
+            int r = simBoard.findRow(reply);
+            if (r < 0)
+                continue;
+
+            simBoard.setCell(r, reply, opponent);
+            bool isThreat = getTileThreat(simBoard, opponent, r, reply);
+
+            simBoard.setCell(r, reply, Player::EMPTY); // undo
+
+            if (isThreat)
+            {
+                return true; // the bot move enables an immediate threat
+            }
+        }
+
+        return false;
+    }
+
     /**
      * Generate metrics for a specific tile in the Connect 4 board
      * @param board The current state of the board
@@ -593,9 +720,9 @@ public:
      * @return A TileMetrics object containing various metrics for the tile
      */
     static TileMetrics generateMetricsForTile(
-        Connect4Board &board, Player player, int r_play, Column column)
+        Connect4Board &board, Player player, int r_play, Column column, bool debug = false)
     {
-        TileMetrics metrics = {-1, -1, false, false, false};
+        TileMetrics metrics = {-1, -1, false, false, false, -1, false};
 
         // Get the pressure for the tile
         metrics.pressure = getTilePressure(board, player, r_play, column);
@@ -611,13 +738,24 @@ public:
         // Get the winning move for the tile
         metrics.winningMove = getTileWinningMove(board, player, r_play, column);
 
-        // cout << "Metrics for tile (" << board.ROWS - r_play << ", " << Connect4Board::colToChar(column) << "): "
-        //      << "Owner: " << (player == Connect4Board::PLAYER1 ? "Player 1" : "Player 2")
-        //      << ", Pressure: " << metrics.pressure
-        //      << ", Win Options: " << metrics.winOptions
-        //      << ", Immediate Threat: " << (metrics.immediateThreat ? "Yes" : "No")
-        //      << ", Minor Threat: " << (metrics.minorThreat ? "Yes" : "No")
-        //      << ", Winning Move: " << (metrics.winningMove ? "Yes" : "No") << endl;
+        // Get the preferred winning row for the tile
+        metrics.preferredWinningRow = getTilePreferredWinningRow(board, r_play, column, player);
+
+        // Get if the tile enables an opponent threat
+        metrics.enablesOpponentThreat = getTileEnablesOpponentThreat(board, column, player);
+
+        if (debug)
+        {
+            cout << "Metrics for tile (" << board.ROWS - r_play << ", " << Connect4Board::colToChar(column) << "): "
+                 << "Owner: " << (player == Connect4Board::BOT ? "BOT" : "USER")
+                 << ", Pressure: " << metrics.pressure
+                 << ", Win Options: " << metrics.winOptions
+                 << ", Immediate Threat: " << (metrics.immediateThreat ? "Yes" : "No")
+                 << ", Minor Threat: " << (metrics.minorThreat ? "Yes" : "No")
+                 << ", Winning Move: " << (metrics.winningMove ? "Yes" : "No")
+                 << ", Preferred Winning Row: " << metrics.preferredWinningRow
+                 << endl;
+        }
 
         return metrics;
     }
@@ -639,7 +777,11 @@ public:
                 winOptions[col],
                 threats[col],
                 minorThreats[col],
-                winMoves[col]};
+                winMoves[col],
+                getTilePreferredWinningRow(board, board.findRow(col), static_cast<Column>(col), player),
+                getTileEnablesOpponentThreat(board, static_cast<Column>(col), player)
+
+            };
         }
         return metrics;
     }

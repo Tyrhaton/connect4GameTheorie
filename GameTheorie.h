@@ -78,14 +78,27 @@ public:
         {
             throw runtime_error("Board is not initialized.");
         }
+
+        if (!tree)
+        {
+            throw runtime_error("Tree is not initialized.");
+        }
+
         if (column < 0 || column >= COLS)
         {
             throw invalid_argument("Invalid column: " + to_string(column));
         }
+
+        if (BOARD->findRow(column) < 0)
+        {
+            throw runtime_error("Column " + Connect4Board::colToChar(column) + " is full.");
+        }
+
         if (debug)
         {
             cout << "Player " << (player == Player::BOT ? "Bot" : "User") << " plays in column: " << Connect4Board::colToChar(column) << endl;
         }
+
         bool playerWon = BOARD->dropDisc(column, player);
 
         tree->updateTree(*BOARD, column);
@@ -137,7 +150,8 @@ public:
         }
         else if (level == HARD)
         {
-            throw runtime_error("Hard level not implemented yet.");
+            // throw runtime_error("Hard level not implemented yet.");
+            return getBestMoveHard(debug);
         }
         else
         {
@@ -353,7 +367,6 @@ public:
                     bestMove = child->move;
                 }
             }
-            // TO DO: implement odd even strategy?
         }
         if (threatTile != Column::INVALID)
         {
@@ -367,6 +380,142 @@ public:
         return bestMove;
     }
 
+    Column getBestMoveHard(bool debug = false)
+    {
+        if (!tree)
+        {
+            throw runtime_error("Tree is not initialized.");
+        }
+        if (!tree->root)
+        {
+            throw runtime_error("Tree root is not initialized.");
+        }
+        Tree copy = *tree;
+        vector<Column> possibleMoves = BOARD->getPossibleMoves();
+
+        Column bestMove = possibleMoves.front();
+        Column threatTile = Column::INVALID;
+        Column minorThreatTile = Column::INVALID;
+        bool enablesOpponentThreatFound = false;
+
+        int bestScore = -1;
+        int pressure = -1;
+
+        bool botPrefersOddWin = (STARTINGPLAYER == Player::BOT); 
+
+        for (TreeNode *child : copy.root->children)
+        {
+            if (!child)
+            {
+                continue;
+            }
+
+            if (debug)
+            {
+                cout << "Child: " << Connect4Board::colToChar(child->move) << child->row
+                     << " Owner: " << (child->owner == 1 ? "Player 1" : "Player 2")
+                     << " Win: " << (child->metrics.winningMove ? "True" : "False")
+                     << " Threat: " << (child->metrics.immediateThreat ? "True" : "False")
+                     << " Minor Threat: " << (child->metrics.minorThreat ? "True" : "False")
+                     << " Win Options: " << child->metrics.winOptions
+                     << " Pressure: " << child->metrics.pressure
+                     << " FutureWinRow: " << child->metrics.preferredWinningRow
+                     << " EnablesOpponentThreat: " << (child->metrics.enablesOpponentThreat ? "True" : "False")
+                     << endl;
+            }
+
+            if (child->metrics.winningMove)
+            {
+                return child->move;
+            }
+
+            if (child->metrics.immediateThreat)
+            {
+                bool better = false;
+
+                if (threatTile == Column::INVALID)
+                {
+                    better = true;
+                }
+                else if (child->metrics.pressure > pressure)
+                {
+                    better = true;
+                }
+                else if (child->metrics.pressure == pressure && child->metrics.enablesOpponentThreat == false && enablesOpponentThreatFound == true)
+                {
+                    better = true;
+                }
+
+                if (better)
+                {
+                    threatTile = child->move;
+                    pressure = child->metrics.pressure;
+                    enablesOpponentThreatFound = child->metrics.enablesOpponentThreat;
+                }
+            }
+
+            if (child->metrics.minorThreat)
+            {
+                bool better = false;
+
+                if (minorThreatTile == Column::INVALID)
+                {
+                    better = true;
+                }
+                else if (child->metrics.pressure > pressure)
+                {
+                    better = true;
+                }
+                else if (child->metrics.pressure == pressure && child->metrics.enablesOpponentThreat == false && enablesOpponentThreatFound == true)
+                {
+                    better = true;
+                }
+
+                if (better)
+                {
+                    minorThreatTile = child->move;
+                    pressure = child->metrics.pressure;
+                    enablesOpponentThreatFound = child->metrics.enablesOpponentThreat;
+                }
+            }
+
+            int bonus = 0;
+
+            if (!child->metrics.enablesOpponentThreat)
+            {
+                bonus += 5;
+            }
+
+            int futureRow = child->metrics.preferredWinningRow; 
+
+            if (futureRow != -1)
+            {
+                bool isOdd = (futureRow % 2 == 1);
+                if (isOdd == botPrefersOddWin)
+                {
+                    bonus += 5; 
+                }
+            }
+
+            int score = child->metrics.winOptions * 10 + child->metrics.pressure + bonus;
+
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestMove = child->move;
+            }
+        }
+
+        if (threatTile != Column::INVALID)
+        {
+            return threatTile;
+        }
+        if (minorThreatTile != Column::INVALID)
+        {
+            return minorThreatTile;
+        }
+        return bestMove;
+    }
     /**
      * Set the board and player for this game theory instance
      * @param newBoard The new Connect4Board instance

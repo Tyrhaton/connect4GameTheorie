@@ -9,10 +9,10 @@ int main()
     bool debug = false;
     bool run = true;
     bool letBotPlay = false; // if false, the user plays both players
-    int depth = 2;           // depth of the game tree, higher values will take longer to compute, depth 4 should compile fast enough, 5 or higher will be slow
+    int depth = 4;           // depth of the game tree, higher values will take longer to compute, depth 4 should compile fast enough, 5 or higher will be slow
 
     Connect4Board initBoard;
-    Player startingPlayer = Player::BOT; // USER (user) or BOT (system)
+    Player startingPlayer = Player::USER; // USER (user) or BOT (system)
     Player opponentPlayer = initBoard.getOponent(startingPlayer);
 
     GameTheorie::Level level = GameTheorie::Level::EASY;
@@ -47,7 +47,8 @@ int main()
             }
 
             // player 2
-            Column bestMove = brain.getBestMove();
+            Column bestMove = brain.getBestMove(level, debug);
+            cout << "Best move for bot: " << Connect4Board::colToChar(bestMove) << endl;
 
             if (!letBotPlay)
             {
@@ -70,7 +71,7 @@ int main()
         {
 
             // player 2
-            Column bestMove = brain.getBestMove();
+            Column bestMove = brain.getBestMove(level, debug);
 
             if (!letBotPlay)
             {
@@ -107,6 +108,11 @@ int main()
                 cout << "User won!" << endl;
                 break;
             }
+        }
+        if (brain.getBoard().full())
+        {
+            cout << "The board is full, it's a draw!" << endl;
+            break;
         }
     }
     cout << "Game over!" << endl;

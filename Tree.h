@@ -110,20 +110,22 @@ public:
             board.setCell(r_play, column, player);
 
             bool oppCanWin = false;
+            if (player == Player::BOT)
+            {
+                vector<Column> replyMoves = board.getPossibleMoves();
+                for (Column oppCol : replyMoves)
+                {
+                    Connect4Board replyBoard = board;
+                    replyBoard.dropDisc(oppCol, opponent);
+                    if (replyBoard.checkWin(opponent))
+                    {
+                        oppCanWin = true;
+                        break;
+                    }
+                }
+            }
 
-            // vector<Column> replyMoves = board.getPossibleMoves();
-            // for (Column oppCol : replyMoves)
-            // {
-            //     Connect4Board replyBoard = board;
-            //     replyBoard.dropDisc(oppCol, opponent);
-            //     if (replyBoard.checkWin(opponent))
-            //     {
-            //         oppCanWin = true;
-            //         break;
-            //     }
-            // }
-
-            if (oppCanWin)
+            if (oppCanWin && !tm.winningMove)
             {
                 board.setCell(r_play, column, Player::EMPTY);
                 continue;
@@ -138,10 +140,7 @@ public:
                 board.ROWS - r_play);
             children.push_back(child);
 
-            // if (!tm.winningMove)
-            // {
             child->addLayer(board, depth - 1, child->level);
-            // }
             board.setCell(r_play, column, Player::EMPTY);
 
             if (tm.winningMove && player == Player::BOT)
@@ -164,7 +163,6 @@ public:
                 }
                 else
                 {
-                    // cout << "Keeping child " << (*it)->label << " because it is a winning move." << endl;
                     ++it;
                 }
             }
@@ -420,7 +418,7 @@ public:
          int depth)
     {
 
-        root = new TreeNode(Column::A, "Root", 0, board.getOponent(startingPlayer));
+        root = new TreeNode(Column::A, "Root", 0, board.getOponent(startingPlayer), TileMetrics{-1, -1, false, false, false, -1, false});
 
         root->addLayer(board, depth, 0);
     }
