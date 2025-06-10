@@ -52,16 +52,18 @@ public:
      */
     Level LEVEL = Level::EASY;
 
+    bool ADVANCEDPRUNING = true; // If true, the bot will use advanced pruning techniques to speed up adding layers to the game tree
+
     /**
      * Default constructor for GameTheorie
      * Initializes the game theory with a default board and players
      */
     GameTheorie(Connect4Board &board, Player startingPlayer = Player::BOT,
-                int depth = 2, Level level = Level::EASY)
-        : STARTINGPLAYER(startingPlayer), CURRENTPLAYER(startingPlayer), LEVEL(level)
+                int depth = 2, Level level = Level::EASY, bool advancedPruning = true)
+        : STARTINGPLAYER(startingPlayer), CURRENTPLAYER(startingPlayer), LEVEL(level), ADVANCEDPRUNING(advancedPruning)
     {
         BOARD = &board;
-        tree = new Tree(board, startingPlayer, depth);
+        tree = new Tree(board, startingPlayer, depth, advancedPruning);
         tree->toDot();
         tree->dotToSvg();
     }
@@ -401,7 +403,7 @@ public:
         int bestScore = -1;
         int pressure = -1;
 
-        bool botPrefersOddWin = (STARTINGPLAYER == Player::BOT); 
+        bool botPrefersOddWin = (STARTINGPLAYER == Player::BOT);
 
         for (TreeNode *child : copy.root->children)
         {
@@ -486,14 +488,14 @@ public:
                 bonus += 5;
             }
 
-            int futureRow = child->metrics.preferredWinningRow; 
+            int futureRow = child->metrics.preferredWinningRow;
 
             if (futureRow != -1)
             {
                 bool isOdd = (futureRow % 2 == 1);
                 if (isOdd == botPrefersOddWin)
                 {
-                    bonus += 5; 
+                    bonus += 5;
                 }
             }
 

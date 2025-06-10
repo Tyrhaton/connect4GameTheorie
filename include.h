@@ -24,5 +24,6 @@ using Player = Connect4Board::Player;
 #include "Metrics.h"
 #include "Tree.h"
 #include "GameTheorie.h"
+using Level = GameTheorie::Level;
 
 #endif // INCLUDE_GAME_THEORIE_H

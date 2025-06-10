@@ -8,16 +8,16 @@ int main()
     // Config
     bool debug = false;
     bool run = true;
-    bool letBotPlay = false; // if false, the user plays both players
-    int depth = 4;           // depth of the game tree, higher values will take longer to compute, depth 4 should compile fast enough, 5 or higher will be slow
-
+    bool letBotPlay = false;     // if false, the user plays both players
+    int depth = 8;               // depth of the game tree, higher values will take longer to compute, depth=4 should compile fast enough, 5 or higher will be slow
+    bool advancedPruning = true; // if true, the bot will use advanced pruning techniques to speed up adding layers to the game tree, using this will allow for depth=7 for still fast and depth=8 for still decent timing
     Connect4Board initBoard;
     Player startingPlayer = Player::USER; // USER (user) or BOT (system)
     Player opponentPlayer = initBoard.getOponent(startingPlayer);
 
-    GameTheorie::Level level = GameTheorie::Level::EASY;
+    Level level = Level::HARD; // EASY, MEDIUM, HARD
 
-    GameTheorie brain = GameTheorie(initBoard, startingPlayer, depth, level);
+    GameTheorie brain = GameTheorie(initBoard, startingPlayer, depth, level, advancedPruning);
     Connect4Board board = brain.getBoard();
 
     board.print();
