@@ -14,13 +14,20 @@ public:
     static constexpr int COLS = 7;
 
     /**
+     * Direction vectors for checking winning conditions.
+     * These represent the 4 possible directions: horizontal, vertical, diagonal down-right, and diagonal down-left.
+     */
+    static constexpr int dr[4] = {0, 1, 1, 1};
+    static constexpr int dc[4] = {1, 0, 1, -1};
+
+    /**
      * Enumeration for the different marks on the board.
      */
     enum Mark
     {
         EMPTYMARK = '.',
-        PLAYER1MARK = 'X',
-        PLAYER2MARK = 'O'
+        BOTMARK = 'X',
+        USERMARK = 'O'
     };
 
     /**
@@ -41,12 +48,12 @@ public:
 
     /**
      * Convert a character to a Column enumeration.
-     * @param c The character representing the column (A-G).
+     * @param column The character representing the column (A-G).
      * @return The corresponding Column enumeration.
      */
-    static Column charToColumn(char c)
+    static Column charToColumn(char column)
     {
-        switch (c)
+        switch (column)
         {
         case 'a':
             return Column::A;
@@ -161,9 +168,6 @@ public:
         }
     }
 
-    static constexpr int dr[4] = {0, 1, 1, 1};
-    static constexpr int dc[4] = {1, 0, 1, -1};
-
     /**
      * Print the current state of the board.
      */
@@ -177,10 +181,13 @@ public:
             {
                 char ch = EMPTYMARK;
                 if (grid[r][c] == BOT)
-                    ch = PLAYER1MARK;
+                {
+                    ch = BOTMARK;
+                }
                 else if (grid[r][c] == USER)
-                    ch = PLAYER2MARK;
-
+                {
+                    ch = USERMARK;
+                }
                 cout << ch << ' ';
             }
             cout << '\n';

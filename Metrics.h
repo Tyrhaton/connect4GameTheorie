@@ -15,21 +15,33 @@ struct TileMetrics
 
 class Metrics
 {
-public:
+private:
+    /**
+     * Direction vectors for 4 and 8 directions
+     */
     static constexpr int dr4[4] = {0, 1, 1, 1};
     static constexpr int dc4[4] = {1, 0, 1, -1};
 
     static constexpr int dr8[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
     static constexpr int dc8[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
 
+    static constexpr int DIRECTIONS[4][2] = {
+        {0, 1}, // horizontal
+        {1, 0}, // vertical
+        {1, 1}, // diagonal down-right
+        {1, -1} // diagonal down-left
+    };
+
+public:
     /**
      * Count the pressure sum for each column
      * @param board The current state of the board
      * @param player The current player
      * @return A vector of pressure values for each column
      */
-    static vector<int> countPressureSum(Connect4Board &board,
-                                        Player player)
+    static vector<int> countPressureSum(
+        Connect4Board &board,
+        Player player)
     {
         Player opponent = board.getOponent(player);
 
@@ -354,8 +366,11 @@ public:
      * @param column The column index of the tile to analyze
      * @return The pressure value, or -1 if (r_play,column) is off-board.
      */
-    static int getTilePressure(const Connect4Board &board, Player player,
-                               int r_play, Column column)
+    static int getTilePressure(
+        const Connect4Board &board,
+        Player player,
+        int r_play,
+        Column column)
     {
         Player opponent = board.getOponent(player);
         if (!board.inBoard(r_play, column) ||
@@ -401,10 +416,11 @@ public:
      * @param column The column index of the tile to analyze
      * @return True if the tile is a winning move, false otherwise
      */
-    static int getTileWinOptions(const Connect4Board &board,
-                                 Player player,
-                                 int r_play,
-                                 int column)
+    static int getTileWinOptions(
+        const Connect4Board &board,
+        Player player,
+        int r_play,
+        int column)
     {
         Player opponent = board.getOponent(player);
         if (!board.inBoard(r_play, column) ||
@@ -466,10 +482,13 @@ public:
      * @param column The column index of the tile to analyze
      * @return True if the tile is a threat, false otherwise
      */
-    static bool getTileThreat(const Connect4Board &board, Player player, int r_play, Column column)
+    static bool getTileThreat(
+        const Connect4Board &board,
+        Player player,
+        int r_play,
+        Column column)
     {
         Player opponent = board.getOponent(player);
-        // Check that (r_play, column) is within bounds and actually empty:
         if (r_play < 0 || r_play >= board.ROWS ||
             column < 0 || column >= board.COLS ||
             board.getCell(r_play, column) != Player::EMPTY)
@@ -477,7 +496,6 @@ public:
             return false;
         }
 
-        // Check for immediate threats
         Connect4Board copy = board;
         copy.setCell(r_play, column, opponent);
         return copy.checkWin(opponent);
@@ -491,10 +509,11 @@ public:
      * @param column The column index of the tile to analyze
      * @return True if the tile is a minor threat, false otherwise
      */
-    static bool getTileMinorThreat(const Connect4Board &board,
-                                   Player player,
-                                   int r_play,
-                                   int column)
+    static bool getTileMinorThreat(
+        const Connect4Board &board,
+        Player player,
+        int r_play,
+        int column)
     {
         Player opponent = board.getOponent(player);
 
@@ -570,10 +589,12 @@ public:
      * @param column The column index of the tile to analyze
      * @return True if the tile is a winning move, false otherwise
      */
-    static bool getTileWinningMove(const Connect4Board &board, Player player, int r_play, Column column)
+    static bool getTileWinningMove(
+        const Connect4Board &board,
+        Player player,
+        int r_play,
+        Column column)
     {
-        // cout << "Checking winning move for player " << (player == Connect4Board::PLAYER1 ? "Player 1" : "Player 2")
-        //  << " at (" << board.ROWS - r_play << ", " << Connect4Board::colToChar(column) << ")" << endl;
         if (!board.inBoard(r_play, column) ||
             board.getCell(r_play, column) != Player::EMPTY)
         {
@@ -582,19 +603,15 @@ public:
 
         Connect4Board copy = board;
         copy.setCell(r_play, column, player);
-        // cout << "Checking if this is a winning move..." << (copy.checkWin(player) ? "Yes" : "No") << endl;
         return copy.checkWin(player);
     }
 
-    static int getTilePreferredWinningRow(const Connect4Board &board, int row, Column col, Player player)
+    static int getTilePreferredWinningRow(
+        const Connect4Board &board,
+        int row,
+        Column col,
+        Player player)
     {
-        const int DIRECTIONS[4][2] = {
-            {0, 1}, // horizontal
-            {1, 0}, // vertical
-            {1, 1}, // diagonal down-right
-            {1, -1} // diagonal down-left
-        };
-
         const int requiredToWin = 4;
 
         for (int d = 0; d < 4; ++d)
@@ -602,14 +619,12 @@ public:
             int dr = DIRECTIONS[d][0];
             int dc = DIRECTIONS[d][1];
 
-            int count = 1; // include current tile
+            int count = 1;
             vector<pair<int, int>> positions;
 
-            // Check in the negative direction
             for (int i = 0; i < requiredToWin; ++i)
             {
                 int r = row - dr * i;
-                // cout << "row: " << row << ", r: " << r << endl;
                 int c = col - dc * i;
                 if (!board.inBoard(r, c))
                 {
@@ -631,7 +646,6 @@ public:
                 }
             }
 
-            // Check in the positive direction
             for (int i = 0; i < requiredToWin; ++i)
             {
                 int r = row + dr * i;
@@ -656,7 +670,6 @@ public:
                 }
             }
 
-            // If we have 3 of our own and at least one open tile in line
             if (count == 3)
             {
                 for (auto &pos : positions)
@@ -675,7 +688,10 @@ public:
         return -1;
     }
 
-    static bool getTileEnablesOpponentThreat(const Connect4Board &board, Column move, Player botPlayer)
+    static bool getTileEnablesOpponentThreat(
+        const Connect4Board &board,
+        Column move,
+        Player botPlayer)
     {
         Player opponent = board.getOponent(botPlayer);
         Connect4Board simBoard = board;
@@ -686,17 +702,16 @@ public:
             return false;
         }
 
-        // Simulate the bot making the move
         simBoard.setCell(row, move, botPlayer);
 
-        // Check if opponent now has access to a strong threat
         vector<Column> replyMoves = simBoard.getPossibleMoves();
         for (Column reply : replyMoves)
         {
             int r = simBoard.findRow(reply);
             if (r < 0)
+            {
                 continue;
-
+            }
             simBoard.setCell(r, reply, opponent);
             bool isThreat = getTileThreat(simBoard, opponent, r, reply);
 
@@ -720,12 +735,17 @@ public:
      * @return A TileMetrics object containing various metrics for the tile
      */
     static TileMetrics generateMetricsForTile(
-        Connect4Board &board, Player player, int r_play, Column column, bool debug = false)
+        Connect4Board &board,
+        Player player,
+        int r_play,
+        Column column,
+        bool debug = false)
     {
         TileMetrics metrics = {-1, -1, false, false, false, -1, false};
 
         // Get the pressure for the tile
         metrics.pressure = getTilePressure(board, player, r_play, column);
+
         // Get the win options for the tile
         metrics.winOptions = getTileWinOptions(board, player, r_play, column);
 
@@ -760,7 +780,9 @@ public:
         return metrics;
     }
 
-    static array<TileMetrics, 7> generateMetricsForLayer(Connect4Board &board, Player player)
+    static array<TileMetrics, 7> generateMetricsForLayer(
+        Connect4Board &board,
+        Player player)
     {
         vector<int> pressure = countPressureSum(board, player);
         vector<int> winOptions = countWinOptions(board, player);

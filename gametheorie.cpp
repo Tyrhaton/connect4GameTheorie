@@ -8,8 +8,8 @@ int main()
     // Config
     bool debug = false;
     bool run = true;
-    bool letBotPlay = false;     // if false, the user plays both players
-    int depth = 8;               // depth of the game tree, higher values will take longer to compute, depth=4 should compile fast enough, 5 or higher will be slow
+    bool letBotPlay = true;     // if false, the user plays both players
+    int depth = 7;               // depth of the game tree, higher values will take longer to compute, depth=4 should compile fast enough, 5 or higher will be slow
     bool advancedPruning = true; // if true, the bot will use advanced pruning techniques to speed up adding layers to the game tree, using this will allow for depth=7 for still fast and depth=8 for still decent timing
     // turning on advanced pruning will disable the use of different levels for getBestMove, so the level will always be HARD
     Connect4Board initBoard;
@@ -32,7 +32,6 @@ int main()
             getline(cin, move);
             if (move == "exit" || move == "Exit" || move == "quit" || move == "q")
             {
-                run = false;
                 break;
             }
             // player 1
@@ -95,7 +94,6 @@ int main()
             getline(cin, move);
             if (move == "exit" || move == "Exit" || move == "quit" || move == "q")
             {
-                run = false;
                 break;
             }
             // player 1

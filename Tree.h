@@ -5,7 +5,6 @@
 
 class TreeNode;
 inline void deleteSubtree(TreeNode *node);
-inline TreeNode *selectBestBotChild(const std::vector<TreeNode *> &candidates, Player startingPlayer);
 
 class TreeNode
 {
@@ -20,6 +19,15 @@ public:
     int row;
     vector<TreeNode *> children;
 
+    /**
+     * Constructor for TreeNode
+     * @param move_ The column where the move is made.
+     * @param label_ The label for the node (usually the column name).
+     * @param level_ The level of the node in the tree.
+     * @param owner_ The player who owns this node.
+     * @param metrics_ The metrics associated with this node.
+     * @param row_ The row where the move is made (default -1).
+     */
     TreeNode(Column move_ = Column::INVALID, const string label_ = "", int level_ = 0, Player owner_ = Player::EMPTY, TileMetrics metrics_ = {0, 0, false, false, false}, int row_ = -1)
         : move(move_), label(label_), level(level_), owner(owner_), metrics(metrics_), id(nextId++), row(row_), children()
     {
@@ -42,7 +50,9 @@ public:
      * @param depth The current depth in the tree (used for indentation).
      * @param root Whether this is the root node (used for special formatting).
      */
-    void print(int depth = 0, bool root = false) const
+    void print(
+        int depth = 0,
+        bool root = false) const
     {
         if (root)
         {
@@ -50,11 +60,12 @@ public:
         }
         else
         {
-
             for (int i = 0; i < depth; ++i)
+            {
                 cout << "  ";
-            cout << "Node " << id << ": " << label
-                 << " W=" << (metrics.winningMove ? "1" : "0") << " T=" << (metrics.immediateThreat ? "1" : "0") << " t=" << (metrics.minorThreat ? "1" : "0") << " p=" << metrics.pressure << " w=" << metrics.winOptions << endl;
+                cout << "Node " << id << ": " << label
+                     << " W=" << (metrics.winningMove ? "1" : "0") << " T=" << (metrics.immediateThreat ? "1" : "0") << " t=" << (metrics.minorThreat ? "1" : "0") << " p=" << metrics.pressure << " w=" << metrics.winOptions << endl;
+            }
         }
         for (const auto *child : children)
         {
@@ -67,242 +78,24 @@ public:
      * @param board The current state of the game board.
      * @param depth The remaining depth to explore.
      * @param currentLayer The current layer of the tree.
+     * @param advancedPruning Whether to use advanced pruning techniques.
+     * @param startingPlayer The player who started the game (used for pruning).
      * @return True if the layer was added successfully, false otherwise.
      */
-    // bool addLayerOld(Connect4Board &board,
-    //                  int depth,
-    //                  int currentLayer, bool advancedPruning = true)
-    // {
-    //     Player player = board.getOponent(owner);
-    //     Player opponent = owner;
-
-    //     if (depth <= 0 || board.full() || metrics.winningMove)
-    //     {
-    //         return true;
-    //     }
-
-    //     if (!children.empty())
-    //     {
-    //         for (TreeNode *child : children)
-    //         {
-    //             int r_child = board.findRow(child->move);
-
-    //             board.dropDisc(child->move, player);
-    //             child->addLayer(board, depth - 1, child->level);
-
-    //             board.setCell(r_child, child->move, Player::EMPTY);
-    //         }
-    //         return true;
-    //     }
-
-    //     vector<Column> moves = board.getPossibleMoves();
-    //     bool hasWin = false;
-
-    //     for (Column column : moves)
-    //     {
-    //         int r_play = board.findRow(column);
-    //         // cout << r_play << " " << column << endl;
-    //         if (r_play < 0)
-    //         {
-    //             continue;
-    //         }
-    //         TileMetrics tm = Metrics::generateMetricsForTile(board, player, r_play, column);
-
-    //         board.setCell(r_play, column, player);
-
-    //         bool oppCanWin = false;
-    //         if (player == Player::BOT)
-    //         {
-    //             vector<Column> replyMoves = board.getPossibleMoves();
-    //             for (Column oppCol : replyMoves)
-    //             {
-    //                 Connect4Board replyBoard = board;
-    //                 replyBoard.dropDisc(oppCol, opponent);
-    //                 if (replyBoard.checkWin(opponent))
-    //                 {
-    //                     oppCanWin = true;
-    //                     break;
-    //                 }
-    //             }
-    //         }
-
-    //         if (oppCanWin && !tm.winningMove)
-    //         {
-    //             board.setCell(r_play, column, Player::EMPTY);
-    //             continue;
-    //         }
-
-    //         TreeNode *child = new TreeNode(
-    //             column,
-    //             Connect4Board::colToChar(column),
-    //             currentLayer + 1,
-    //             player,
-    //             tm,
-    //             board.ROWS - r_play);
-    //         children.push_back(child);
-
-    //         child->addLayer(board, depth - 1, child->level);
-    //         board.setCell(r_play, column, Player::EMPTY);
-
-    //         if (tm.winningMove && player == Player::BOT)
-    //         {
-    //             hasWin = true;
-    //             break;
-    //         }
-    //     }
-
-    //     if (hasWin && player == Player::BOT)
-    //     {
-    //         for (auto it = children.begin(); it != children.end();)
-    //         {
-    //             cout << "Checking child " << (*it)->label << " for winning move." << endl;
-    //             if (!(*it)->metrics.winningMove)
-    //             {
-    //                 cout << "Deleting child " << (*it)->label << " because it is not a winning move." << endl;
-    //                 deleteSubtree(*it);
-    //                 it = children.erase(it);
-    //             }
-    //             else
-    //             {
-    //                 ++it;
-    //             }
-    //         }
-    //     }
-
-    //     return true;
-    // }
-
-    // bool addLayer2(Connect4Board &board, int depth, int currentLayer, bool advancedPruning = true)
-    // {
-    //     Player player = board.getOponent(owner);
-    //     Player opponent = owner;
-
-    //     if (depth <= 0 || board.full() || metrics.winningMove)
-    //     {
-    //         return true;
-    //     }
-
-    //     if (!children.empty())
-    //     {
-    //         for (TreeNode *child : children)
-    //         {
-    //             int r_child = board.findRow(child->move);
-
-    //             board.dropDisc(child->move, player);
-    //             child->addLayer(board, depth - 1, child->level);
-
-    //             board.setCell(r_child, child->move, Player::EMPTY);
-    //         }
-    //         return true;
-    //     }
-
-    //     vector<Column> moves = board.getPossibleMoves();
-    //     vector<TreeNode *> candidateChildren;
-
-    //     for (Column column : moves)
-    //     {
-    //         int r_play = board.findRow(column);
-    //         if (r_play < 0)
-    //             continue;
-
-    //         TileMetrics tm = Metrics::generateMetricsForTile(board, player, r_play, column);
-
-    //         board.setCell(r_play, column, player);
-
-    //         TreeNode *child = new TreeNode(
-    //             column,
-    //             Connect4Board::colToChar(column),
-    //             currentLayer + 1,
-    //             player,
-    //             tm,
-    //             board.ROWS - r_play);
-
-    //         candidateChildren.push_back(child);
-    //         board.setCell(r_play, column, Player::EMPTY);
-    //     }
-
-    //     // If advanced pruning is enabled and this is a BOT turn, pick the best only
-    //     if (advancedPruning && player == Player::BOT)
-    //     {
-    //         TreeNode *bestChild = nullptr;
-    //         int bestScore = -1;
-
-    //         for (TreeNode *child : candidateChildren)
-    //         {
-    //             int score = child->metrics.winOptions * 10 + child->metrics.pressure;
-
-    //             if (child->metrics.winningMove)
-    //             {
-    //                 score += 1000; // Strong bonus for instant win
-    //             }
-
-    //             if (!bestChild || score > bestScore)
-    //             {
-    //                 bestScore = score;
-    //                 bestChild = child;
-    //             }
-    //         }
-
-    //         if (bestChild)
-    //         {
-    //             children.push_back(bestChild);
-    //             int r = board.findRow(bestChild->move);
-    //             board.setCell(r, bestChild->move, player);
-    //             bestChild->addLayer(board, depth - 1, bestChild->level, advancedPruning);
-    //             board.setCell(r, bestChild->move, Player::EMPTY);
-    //         }
-
-    //         // Cleanup others
-    //         for (TreeNode *child : candidateChildren)
-    //         {
-    //             if (child != bestChild)
-    //             {
-    //                 deleteSubtree(child);
-    //             }
-    //         }
-    //     }
-    //     else
-    //     {
-    //         // Default behavior: expand all children
-    //         for (TreeNode *child : candidateChildren)
-    //         {
-    //             children.push_back(child);
-    //             int r = board.findRow(child->move);
-    //             board.setCell(r, child->move, player);
-    //             child->addLayer(board, depth - 1, child->level, advancedPruning);
-    //             board.setCell(r, child->move, Player::EMPTY);
-    //         }
-    //     }
-
-    //     // if (hasWin && player == Player::BOT)
-    //     // {
-    //     //     for (auto it = children.begin(); it != children.end();)
-    //     //     {
-    //     //         cout << "Checking child " << (*it)->label << " for winning move." << endl;
-    //     //         if (!(*it)->metrics.winningMove)
-    //     //         {
-    //     //             cout << "Deleting child " << (*it)->label << " because it is not a winning move." << endl;
-    //     //             deleteSubtree(*it);
-    //     //             it = children.erase(it);
-    //     //         }
-    //     //         else
-    //     //         {
-    //     //             ++it;
-    //     //         }
-    //     //     }
-    //     // }
-
-    //     return true;
-    // }
-
-    bool addLayer(Connect4Board &board, int depth, int currentLayer, bool advancedPruning = true, Player startingPlayer = Player::EMPTY)
+    bool addLayer(
+        Connect4Board &board,
+        int depth,
+        int currentLayer,
+        bool advancedPruning = true,
+        Player startingPlayer = Player::EMPTY)
     {
         Player player = board.getOponent(owner);
         Player opponent = owner;
 
         if (depth <= 0 || board.full() || metrics.winningMove)
+        {
             return true;
-
+        }
         if (!children.empty())
         {
             for (TreeNode *child : children)
@@ -319,13 +112,15 @@ public:
         vector<TreeNode *> candidateChildren;
         bool hasWin = false;
 
+        // calculate possible children
         for (Column column : moves)
         {
             int r_play = board.findRow(column);
             if (r_play < 0)
+            {
                 continue;
-
-            TileMetrics tm = Metrics::generateMetricsForTile(board, player, r_play, column);
+            }
+            TileMetrics tileMetrics = Metrics::generateMetricsForTile(board, player, r_play, column);
 
             board.setCell(r_play, column, player);
 
@@ -360,18 +155,19 @@ public:
                 Connect4Board::colToChar(column),
                 currentLayer + 1,
                 player,
-                tm,
+                tileMetrics,
                 board.ROWS - r_play);
 
             candidateChildren.push_back(child);
             board.setCell(r_play, column, Player::EMPTY);
 
-            if (tm.winningMove && player == Player::BOT)
+            if (tileMetrics.winningMove && player == Player::BOT)
             {
                 hasWin = true;
             }
         }
 
+        // If the bot can win, no other children are needed
         if (hasWin && player == Player::BOT)
         {
             for (auto it = candidateChildren.begin(); it != candidateChildren.end();)
@@ -388,6 +184,7 @@ public:
             }
         }
 
+        // If advanced pruning is enabled and this is a BOT turn, pick the best move only
         if (advancedPruning && player == Player::BOT)
         {
 
@@ -395,76 +192,56 @@ public:
 
             if (!bestChild && !candidateChildren.empty())
             {
-                bestChild = candidateChildren.front(); // fallback
+                bestChild = candidateChildren.front();
             }
 
-            if (bestChild)
+            for (auto it = candidateChildren.begin(); it != candidateChildren.end();)
             {
-                children.push_back(bestChild);
-                int r = board.findRow(bestChild->move);
-                board.setCell(r, bestChild->move, player);
-                bestChild->addLayer(board, depth - 1, bestChild->level, advancedPruning);
-                board.setCell(r, bestChild->move, Player::EMPTY);
-            }
+                if (*it == bestChild)
 
-            for (TreeNode *child : candidateChildren)
-            {
-                if (child != bestChild)
                 {
-                    deleteSubtree(child);
+                    ++it; // keep bestChild
+                }
+                else
+                {
+                    deleteSubtree(*it);
+                    it = candidateChildren.erase(it);
                 }
             }
-            // TreeNode *bestChild = nullptr;
-            // int bestScore = -1;
-
-            // for (TreeNode *child : candidateChildren)
-            // {
-            //     int score = child->metrics.winOptions * 10 + child->metrics.pressure;
-            //     if (child->metrics.winningMove)
-            //         score += 1000;
-
-            //     if (!bestChild || score > bestScore)
-            //     {
-            //         bestScore = score;
-            //         bestChild = child;
-            //     }
-            // }
-
-            // if (!bestChild && !candidateChildren.empty())
-            // {
-            //     bestChild = candidateChildren.front();
-            // }
-
-            // if (bestChild)
-            // {
-            //     children.push_back(bestChild);
-            //     int r = board.findRow(bestChild->move);
-            //     board.setCell(r, bestChild->move, player);
-            //     bestChild->addLayer(board, depth - 1, bestChild->level, advancedPruning);
-            //     board.setCell(r, bestChild->move, Player::EMPTY);
-            // }
-
-            // for (TreeNode *child : candidateChildren)
-            // {
-            //     if (child != bestChild)
-            //     {
-            //         deleteSubtree(child);
-            //     }
-            // }
         }
-        else
+
+        if (candidateChildren.empty())
         {
-            for (TreeNode *child : candidateChildren)
+            vector<Column> fallbackMoves = board.getPossibleMoves();
+            if (!fallbackMoves.empty())
             {
-                children.push_back(child);
-                int r = board.findRow(child->move);
-                board.setCell(r, child->move, player);
-                if (!child->metrics.winningMove)
+                Column fallbackCol = fallbackMoves.front();
+                int r_play = board.findRow(fallbackCol);
+                if (r_play >= 0)
                 {
-                    child->addLayer(board, depth - 1, child->level, advancedPruning);
+                    TileMetrics tileMetrics = Metrics::generateMetricsForTile(board, board.getOponent(player), r_play, fallbackCol);
+                    TreeNode *fallback = new TreeNode(
+                        fallbackCol,
+                        Connect4Board::colToChar(fallbackCol),
+                        currentLayer + 1,
+                        board.getOponent(player),
+                        tileMetrics,
+                        board.ROWS - r_play);
+                    candidateChildren.push_back(fallback);
                 }
-                board.setCell(r, child->move, Player::EMPTY);
             }
+        }
+
+        for (TreeNode *child : candidateChildren)
+        {
+            children.push_back(child);
+            int row = board.findRow(child->move);
+            board.setCell(row, child->move, player);
+            if (!child->metrics.winningMove)
+            {
+                child->addLayer(board, depth - 1, child->level, advancedPruning);
+            }
+            board.setCell(row, child->move, Player::EMPTY);
         }
 
         return true;
@@ -493,10 +270,6 @@ public:
      */
     void removeAllBranchesExcept(Column col = Column::INVALID)
     {
-        // cout << children.size()
-        //      << " children before removing branches except "
-        //      << Connect4Board::colToChar(col) << endl;
-
         for (size_t i = 0; i < children.size();)
         {
             TreeNode *child = children[i];
@@ -512,10 +285,6 @@ public:
                 ++i;
             }
         }
-
-        // cout << children.size()
-        //      << " children after removing branches except "
-        //      << Connect4Board::colToChar(col) << endl;
     }
 
     /**
@@ -545,6 +314,123 @@ public:
         deleteSubtree(this);
         removeChild(this);
     }
+
+    /**
+     * Select the best child node for the bot player from the given candidates.
+     * @param candidates The list of candidate child nodes.
+     * @param startingPlayer The player who is making the move.
+     * @return The best child node for the bot player.
+     */
+    TreeNode *selectBestBotChild(
+        const std::vector<TreeNode *> &candidates,
+        Player startingPlayer)
+    {
+        bool botPrefersOddWin = (startingPlayer == Player::BOT);
+        TreeNode *bestChild = nullptr;
+        TreeNode *threatChild = nullptr;
+        TreeNode *minorThreatChild = nullptr;
+
+        int bestScore = -1;
+        int pressure = -1;
+        bool enablesOpponentThreatFound = false;
+
+        for (TreeNode *child : candidates)
+        {
+            if (!child)
+            {
+                continue;
+            }
+            if (child->metrics.winningMove)
+            {
+                return child;
+            }
+
+            if (child->metrics.immediateThreat)
+            {
+                bool better = false;
+                if (!threatChild)
+                {
+                    better = true;
+                }
+                else if (child->metrics.pressure > pressure)
+                {
+                    better = true;
+                }
+                else if (
+                    child->metrics.pressure == pressure &&
+                    !child->metrics.enablesOpponentThreat &&
+                    enablesOpponentThreatFound)
+                {
+                    better = true;
+                }
+                if (better)
+                {
+                    threatChild = child;
+                    pressure = child->metrics.pressure;
+                    enablesOpponentThreatFound = child->metrics.enablesOpponentThreat;
+                }
+            }
+
+            if (child->metrics.minorThreat)
+            {
+                bool better = false;
+                if (!minorThreatChild)
+                {
+                    better = true;
+                }
+                else if (child->metrics.pressure > pressure)
+                {
+                    better = true;
+                }
+                else if (
+                    child->metrics.pressure == pressure &&
+                    !child->metrics.enablesOpponentThreat &&
+                    enablesOpponentThreatFound)
+                {
+                    better = true;
+                }
+                if (better)
+                {
+                    minorThreatChild = child;
+                    pressure = child->metrics.pressure;
+                    enablesOpponentThreatFound = child->metrics.enablesOpponentThreat;
+                }
+            }
+
+            int bonus = 0;
+            if (!child->metrics.enablesOpponentThreat)
+            {
+                bonus += 5;
+            }
+            int futureRow = child->metrics.preferredWinningRow;
+            if (futureRow != -1)
+            {
+                bool isOdd = (futureRow % 2 == 1);
+                if (isOdd == botPrefersOddWin)
+                {
+                    bonus += 5;
+                }
+            }
+
+            int score = child->metrics.winOptions * 10 + child->metrics.pressure + bonus;
+
+            if (!bestChild || score > bestScore)
+            {
+                bestScore = score;
+                bestChild = child;
+            }
+        }
+
+        if (threatChild)
+        {
+            return threatChild;
+        }
+        if (minorThreatChild)
+        {
+            return minorThreatChild;
+        }
+        return bestChild;
+    }
 };
 
 /**
@@ -565,119 +451,12 @@ inline void deleteSubtree(TreeNode *node)
     delete node;
 }
 
-inline TreeNode *selectBestBotChild(const std::vector<TreeNode *> &candidates, Player startingPlayer)
-{
-    bool botPrefersOddWin = (startingPlayer == Player::BOT);
-    TreeNode *bestChild = nullptr;
-    TreeNode *threatChild = nullptr;
-    TreeNode *minorThreatChild = nullptr;
-
-    int bestScore = -1;
-    int pressure = -1;
-    bool enablesOpponentThreatFound = false;
-
-    for (TreeNode *child : candidates)
-    {
-        if (!child)
-        {
-            continue;
-        }
-        if (child->metrics.winningMove)
-        {
-            return child;
-        }
-
-        if (child->metrics.immediateThreat)
-        {
-            bool better = false;
-            if (!threatChild)
-            {
-                better = true;
-            }
-            else if (child->metrics.pressure > pressure)
-            {
-                better = true;
-            }
-            else if (child->metrics.pressure == pressure &&
-                     !child->metrics.enablesOpponentThreat &&
-                     enablesOpponentThreatFound)
-            {
-                better = true;
-            }
-            if (better)
-            {
-                threatChild = child;
-                pressure = child->metrics.pressure;
-                enablesOpponentThreatFound = child->metrics.enablesOpponentThreat;
-            }
-        }
-
-        if (child->metrics.minorThreat)
-        {
-            bool better = false;
-            if (!minorThreatChild)
-            {
-                better = true;
-            }
-            else if (child->metrics.pressure > pressure)
-            {
-                better = true;
-            }
-            else if (child->metrics.pressure == pressure &&
-                     !child->metrics.enablesOpponentThreat &&
-                     enablesOpponentThreatFound)
-            {
-                better = true;
-            }
-            if (better)
-            {
-                minorThreatChild = child;
-                pressure = child->metrics.pressure;
-                enablesOpponentThreatFound = child->metrics.enablesOpponentThreat;
-            }
-        }
-
-        int bonus = 0;
-        if (!child->metrics.enablesOpponentThreat)
-        {
-            bonus += 5;
-        }
-        int futureRow = child->metrics.preferredWinningRow;
-        if (futureRow != -1)
-        {
-            bool isOdd = (futureRow % 2 == 1);
-            if (isOdd == botPrefersOddWin)
-            {
-                bonus += 5;
-            }
-        }
-
-        int score = child->metrics.winOptions * 10 + child->metrics.pressure + bonus;
-
-        if (!bestChild || score > bestScore)
-        {
-            bestScore = score;
-            bestChild = child;
-        }
-    }
-
-    if (threatChild)
-    {
-        return threatChild;
-    }
-    if (minorThreatChild)
-    {
-        return minorThreatChild;
-    }
-    return bestChild;
-}
-
 int TreeNode::nextId = 0;
 
 class Tree
 {
 public:
-    TreeNode *root;
+    TreeNode *ROOT;
     int layers = 0;
     int DEPTH = 0;
     bool ADVANCEDPRUNING = true;
@@ -688,8 +467,8 @@ public:
          int depth, bool advancedPruning = true) : DEPTH(depth), ADVANCEDPRUNING(advancedPruning), STARTINGPLAYER(startingPlayer)
     {
 
-        root = new TreeNode(Column::A, "Root", 0, board.getOponent(startingPlayer), TileMetrics{-1, -1, false, false, false, -1, false});
-        root->addLayer(board, depth, 0, advancedPruning);
+        ROOT = new TreeNode(Column::A, "Root", 0, board.getOponent(startingPlayer), TileMetrics{-1, -1, false, false, false, -1, false});
+        ROOT->addLayer(board, depth, 0, advancedPruning);
     }
 
     /**
@@ -697,9 +476,9 @@ public:
      */
     void print() const
     {
-        if (root)
+        if (ROOT)
         {
-            root->print(0, true);
+            ROOT->print(0, true);
         }
     }
 
@@ -715,9 +494,9 @@ public:
                "  node [shape=box, style=filled, fontcolor=black];\n"
                "  edge [arrowsize=0.7];\n";
 
-        if (root)
+        if (ROOT)
         {
-            string dfs_ = dfs(root, true);
+            string dfs_ = dfs(ROOT, true);
             ofs << dfs_;
         }
         ofs << "}\n";
@@ -730,7 +509,9 @@ public:
      * @param root Whether this is the root node.
      * @return The DOT representation of the subtree.
      */
-    string dfs(const TreeNode *node, bool root = false) const
+    string dfs(
+        const TreeNode *node,
+        bool root = false) const
     {
 
         bool displayMetrics = true; // Set to false to disable metrics display
@@ -798,10 +579,14 @@ public:
      * @param node The current node.
      * @param ofs The output stream to write the edges to.
      */
-    void emitEdges(const TreeNode *node, ofstream &ofs) const
+    void emitEdges(
+        const TreeNode *node,
+        ofstream &ofs) const
     {
         if (!node)
+        {
             return;
+        }
         for (const TreeNode *child : node->children)
         {
             ofs << "  node" << node->id << " -> node" << child->id << ";\n";
@@ -814,7 +599,9 @@ public:
      * @param dotFile The name of the input DOT file.
      * @param svgFile The name of the output SVG file.
      */
-    void dotToSvg(const string &dotFile = "tree.dot", const string &svgFile = "tree.svg") const
+    void dotToSvg(
+        const string &dotFile = "tree.dot",
+        const string &svgFile = "tree.svg") const
     {
         string command = "dot -Tsvg " + dotFile + " -o " + svgFile;
         int ret = system(command.c_str());
@@ -825,91 +612,16 @@ public:
     }
 
     /**
-     * Prune the tree to keep only the best branches based on the metrics.
-     * This will keep the best child for each node based on the player's turn.
-     * @param node The current node to prune.
-     * @param isPlayerTurn Whether it is the player's turn (true) or the opponent's turn (false).
-     */
-    void pruneToBest(TreeNode *node, bool isPlayerTurn)
-    {
-        if (!node || node->children.empty())
-        {
-            return;
-        }
-        for (auto *child : node->children)
-        {
-            pruneToBest(child, !isPlayerTurn);
-        }
-        TreeNode *best = node->children.front();
-        for (auto *child : node->children)
-        {
-            auto &m1 = child->metrics, &m2 = best->metrics;
-            if (isPlayerTurn)
-            {
-                if (m1.winningMove != m2.winningMove)
-                {
-                    best = (m1.winningMove ? child : best);
-                }
-                else if (m1.winOptions != m2.winOptions)
-                {
-                    best = (m1.winOptions > m2.winOptions ? child : best);
-                }
-                else if (m1.pressure != m2.pressure)
-                {
-                    best = (m1.pressure > m2.pressure ? child : best);
-                }
-            }
-            else
-            {
-                if (m1.winningMove != m2.winningMove)
-                {
-                    best = (m1.winningMove ? best : child);
-                }
-                else if (m1.winOptions != m2.winOptions)
-                {
-                    best = (m1.winOptions < m2.winOptions ? child : best);
-                }
-                else if (m1.pressure != m2.pressure)
-                {
-                    best = (m1.pressure < m2.pressure ? child : best);
-                }
-            }
-        }
-        for (auto it = node->children.begin(); it != node->children.end();)
-        {
-            if (*it != best)
-            {
-                delete *it;
-                it = node->children.erase(it);
-            }
-            else
-            {
-                ++it;
-            }
-        }
-    }
-
-    /**
-     * Prune the tree to keep only the best branches based on the player's turn.
-     * This will prune the tree to the best move for the current player.
-     * @param isPlayerTurn Whether it is the player's turn (true) or the opponent's turn (false).
-     */
-    void prune(bool isPlayerTurn)
-    {
-        pruneToBest(root, isPlayerTurn);
-    }
-
-    /**
      * Grow the tree by adding a new layer of nodes.
      * This will expand the tree by one level based on the current board state.
      * @param currentBoard The current state of the Connect 4 board.
      * @param levels The number of levels to grow (default is 1).
      */
-    void grow(Connect4Board &currentBoard,
-              int levels = 1)
+    void grow(
+        Connect4Board &currentBoard,
+        int levels = 1)
     {
-        // root->growNode(currentBoard, levels, layers);
-        root->addLayer(currentBoard, levels, layers);
+        ROOT->addLayer(currentBoard, levels, layers);
         layers++;
     }
 
@@ -920,7 +632,7 @@ public:
      */
     void setRoot(TreeNode *newRoot)
     {
-        root = newRoot;
+        ROOT = newRoot;
     }
 
     /**
@@ -930,14 +642,14 @@ public:
      */
     void moveRootUp(Column column)
     {
-        root->removeAllBranchesExcept(column);
+        ROOT->removeAllBranchesExcept(column);
 
-        if (root->children.empty())
+        if (ROOT->children.empty())
         {
             throw runtime_error("No children found for the current root. Cannot move root up.");
         }
 
-        for (TreeNode *it : root->children)
+        for (TreeNode *it : ROOT->children)
         {
             if (it->move == column)
             {
@@ -951,14 +663,18 @@ public:
      * This will remove all branches except the specified column and grow the tree.
      * @param board The current state of the Connect 4 board.
      * @param column The column to keep as the new root.
+     * @param debug Whether to enable debug output.
      */
-    void updateTree(Connect4Board &board, Column column, bool debug = false)
+    void updateTree(
+        Connect4Board &board,
+        Column column,
+        bool debug = false)
     {
-        if (!root)
+        if (!ROOT)
         {
             throw runtime_error("Tree root is not initialized.");
         }
-        if (true || debug)
+        if (debug)
         {
             cout << "Updating tree with root: " << Connect4Board::colToChar(column) << endl;
         }

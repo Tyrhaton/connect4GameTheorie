@@ -52,7 +52,15 @@ public:
      */
     Level LEVEL = Level::EASY;
 
-    bool ADVANCEDPRUNING = true; // If true, the bot will use advanced pruning techniques to speed up adding layers to the game tree
+    /**
+     * If true, the bot will use advanced pruning techniques to speed up adding layers to the game tree
+     */
+    bool ADVANCEDPRUNING = true;
+
+    /**
+     * Record all the played moves in the Move Recorder Instance
+     */
+    MoveRecorder MOVERECORDER;
 
     /**
      * Default constructor for GameTheorie
@@ -66,6 +74,7 @@ public:
         tree = new Tree(board, startingPlayer, depth, advancedPruning);
         tree->toDot();
         tree->dotToSvg();
+        MOVERECORDER = MoveRecorder();
     }
 
     /**
@@ -106,6 +115,8 @@ public:
         tree->updateTree(*BOARD, column);
 
         setCurrentPlayer(BOARD->getOponent(player));
+
+        MOVERECORDER.recordMove(player, column);
         return playerWon;
     }
 
@@ -143,9 +154,9 @@ public:
     {
         if (ADVANCEDPRUNING)
         {
-            if (!tree->root->children.empty())
+            if (!tree->ROOT->children.empty())
             {
-                TreeNode *firstChild = tree->root->children.front();
+                TreeNode *firstChild = tree->ROOT->children.front();
                 return firstChild->move;
             }
         }
@@ -161,7 +172,6 @@ public:
         }
         else if (level == HARD)
         {
-            // throw runtime_error("Hard level not implemented yet.");
             return getBestMoveHard(debug);
         }
         else
@@ -206,9 +216,13 @@ public:
             for (int c = 0; c < Connect4Board::COLS; ++c)
             {
                 if (pressure[c] < 0)
+                {
                     cout << "X ";
+                }
                 else
+                {
                     cout << pressure[c] << " ";
+                }
             }
 
             cout << endl
@@ -219,9 +233,13 @@ public:
             for (int c = 0; c < 7; ++c)
             {
                 if (winOptions[c] < 0)
+                {
                     cout << "X ";
+                }
                 else
+                {
                     cout << winOptions[c] << " ";
+                }
             }
             cout << endl;
             cout << endl;
@@ -230,9 +248,13 @@ public:
             for (int c = 0; c < 7; ++c)
             {
                 if (threats[c] == true)
+                {
                     cout << "T ";
+                }
                 else
+                {
                     cout << "X ";
+                }
             }
             cout << endl;
             cout << endl;
@@ -241,9 +263,13 @@ public:
             for (int c = 0; c < 7; ++c)
             {
                 if (minorThreats[c] == true)
+                {
                     cout << "t ";
+                }
                 else
+                {
                     cout << "X ";
+                }
             }
             cout << endl;
             cout << endl;
@@ -252,9 +278,13 @@ public:
             for (int c = 0; c < 7; ++c)
             {
                 if (winMoves[c] == true)
+                {
                     cout << "y ";
+                }
                 else
+                {
                     cout << "X ";
+                }
             }
             cout << endl;
             cout << endl;
@@ -313,7 +343,7 @@ public:
             throw runtime_error("Tree is not initialized.");
         }
 
-        TreeNode *root = tree->root;
+        TreeNode *root = tree->ROOT;
         if (!root)
         {
             throw runtime_error("Tree root is not initialized.");
@@ -328,7 +358,7 @@ public:
         Column minorThreatTile = Column::INVALID;
         Column bestMove = possibleMoves.front();
 
-        for (auto child : copy.root->children)
+        for (auto child : copy.ROOT->children)
         {
             if (debug)
             {
@@ -391,13 +421,18 @@ public:
         return bestMove;
     }
 
+    /**
+     * Get the best move for the current player with Level = HARD
+     * @param debug if there should be extra output to help debugging
+     * @return The best move as a Column
+     */
     Column getBestMoveHard(bool debug = false)
     {
         if (!tree)
         {
             throw runtime_error("Tree is not initialized.");
         }
-        if (!tree->root)
+        if (!tree->ROOT)
         {
             throw runtime_error("Tree root is not initialized.");
         }
@@ -414,7 +449,7 @@ public:
 
         bool botPrefersOddWin = (STARTINGPLAYER == Player::BOT);
 
-        for (TreeNode *child : copy.root->children)
+        for (TreeNode *child : copy.ROOT->children)
         {
             if (!child)
             {
@@ -624,6 +659,14 @@ public:
     void setTree(Tree *newTree)
     {
         tree = newTree;
+    }
+
+    /**
+     * Print the move history
+     */
+    void printHistory()
+    {
+        MOVERECORDER.print();
     }
 };
 
