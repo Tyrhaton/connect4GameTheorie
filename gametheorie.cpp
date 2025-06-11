@@ -11,6 +11,7 @@ int main()
     bool letBotPlay = false;     // if false, the user plays both players
     int depth = 8;               // depth of the game tree, higher values will take longer to compute, depth=4 should compile fast enough, 5 or higher will be slow
     bool advancedPruning = true; // if true, the bot will use advanced pruning techniques to speed up adding layers to the game tree, using this will allow for depth=7 for still fast and depth=8 for still decent timing
+    // turning on advanced pruning will disable the use of different levels for getBestMove, so the level will always be HARD
     Connect4Board initBoard;
     Player startingPlayer = Player::USER; // USER (user) or BOT (system)
     Player opponentPlayer = initBoard.getOponent(startingPlayer);

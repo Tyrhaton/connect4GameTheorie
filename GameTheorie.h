@@ -141,6 +141,15 @@ public:
      */
     Column getBestMove(GameTheorie::Level level = MEDIUM, bool debug = false)
     {
+        if (ADVANCEDPRUNING)
+        {
+            if (!tree->root->children.empty())
+            {
+                TreeNode *firstChild = tree->root->children.front();
+                return firstChild->move;
+            }
+        }
+
         if (level == EASY)
         {
 
