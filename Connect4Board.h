@@ -397,6 +397,47 @@ public:
     }
 
     /**
+     * Structure to hold information about a move
+     */
+    struct MoveInfo
+    {
+        Column column;
+        Player player;
+    };
+
+    /**
+     * Get the difference between two board states.
+     * @param before The board state before the move.
+     * @param after The board state after the move.
+     * @return A MoveInfo struct representing the move difference.
+     */
+    static MoveInfo getMoveDifference(const Connect4Board &before, const Connect4Board &after)
+    {
+        for (int col = 0; col < before.COLS; ++col)
+        {
+            for (int row = before.ROWS - 1; row >= 0; --row)
+            {
+                Player beforeCell = before.getCell(row, col);
+                Player afterCell = after.getCell(row, col);
+
+                if (beforeCell != afterCell)
+                {
+                    if (beforeCell == Player::EMPTY && afterCell != Player::EMPTY)
+                    {
+                        return {static_cast<Column>(col), afterCell};
+                    }
+                    else
+                    {
+                        throw runtime_error("Invalid board diff: expected only a disc added.");
+                    }
+                }
+            }
+        }
+
+        throw runtime_error("No move difference found.");
+    }
+
+    /**
      * Adds functionality to compare 2 boards their grid
      * @return true if the grids are equal, false otherwise
      */
