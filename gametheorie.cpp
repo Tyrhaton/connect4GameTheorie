@@ -115,6 +115,7 @@ int main()
         }
     }
     cout << "Game over!" << endl;
+    brain.printHistory();
 
     return 0;
 }

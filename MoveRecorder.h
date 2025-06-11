@@ -39,8 +39,8 @@ public:
         {
             const Move &m = history[i];
             char colChar = static_cast<char>('A' + static_cast<int>(m.column));
-            cout << "Move " << (i + 1) << ": Player "
-                 << (m.player == Player::USER ? "U" : "B")
+            cout << "Move " << (i + 1) << ": "
+                 << (m.player == Player::USER ? "User" : "Bot ")
                  << " -> " << colChar << "\n";
         }
     }
